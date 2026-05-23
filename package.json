@@ -1,0 +1,25 @@
+{
+  "name": "en25-final-project",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "vite": "^8.0.14"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "@types/chalk": "^2.2.4",
+    "@types/express": "^5.0.6",
+    "chalk": "^5.6.2",
+    "express": "^5.2.1",
+    "vite": "^8.0.14"
+  }
+}
