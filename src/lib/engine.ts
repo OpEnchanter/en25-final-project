@@ -129,10 +129,12 @@ export class Renderer extends ComponentBase {
     }
 
     override onLateUpdate(): void {
-        if (!this.transform) {return}
+        if (!this.transform || !this.object) {return}
+        const vscale = this.object.app.viewportScale;
+        const cplane = this.object.app.renderingClippingPlane;
         const p = {
-            x: Math.round(this.transform.position.x),
-            y: Math.round(this.transform.position.y)
+            x: Math.round(this.transform.position.x - (cplane.position.x - vscale.x / 2)),
+            y: Math.round(this.transform.position.y - (cplane.position.y - vscale.x / 2))
         } as vector
         draw(this.ctx, this.sprite?.texture as HTMLImageElement, this.transform?.rotation as number, p, this.transform?.scale as vector)
     }
@@ -323,6 +325,19 @@ export class Rigidbody extends ComponentBase {
     }
 }
 
+export class Camera extends ComponentBase {
+    private transform: Transform | null = null;
+    override onInitialized(): void {
+        if (!this.object) return
+        this.transform = this.object.getComponents(Transform)[0] as Transform
+    }
+
+    override onUpdate(): void {
+        if (!this.transform || !this.object) return
+        this.object.app.renderingClippingPlane.position = this.transform.position;
+    }
+}
+
 export class PlayerController extends ComponentBase {
     keys: any = {};
     private transform: Transform | null = null;
@@ -476,6 +491,13 @@ export class App {
 
     options: ApplicationOptions;
 
+    public renderingClippingPlane: {
+        position: vector,
+        scale: vector
+    } = {position: {x:0,y:0},scale: {x:0,y:0},};
+
+    public viewportScale: vector = {x:0,y:0}
+
     constructor (options?: ApplicationOptions) {
         this.options = options ? options : {
             downscaleFactor: 1
@@ -487,6 +509,15 @@ export class App {
         })());
         this.ctx = this.canvas.getContext("2d");
         this.ctx.imageSmoothingEnabled = false
+
+        if (!this.options.downscaleFactor) return
+        const vw = document.body.clientWidth / this.options.downscaleFactor;
+        const vh = document.body.clientWidth / this.options.downscaleFactor;
+        this.viewportScale = {x:vw, y:vh}
+        this.renderingClippingPlane = {
+            position: {x:vw/2, y:vh/2},
+            scale: {x:vw, y:vh}
+        }
     }
 
     addObject(obj: GameObject) {

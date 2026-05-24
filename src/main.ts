@@ -33,10 +33,11 @@ for (let b = 0; b < 0; b++) {
 }
 
 app.addObject(new Engine.GameObjectBuilder(app)
-    .addComponent(new Engine.Sprite("/src/assets/smorf.png"))
+    .addComponent(new Engine.Sprite("/src/assets/mario.png"))
     .addComponent(new Engine.Renderer(app.ctx))
-    .addComponent(new Engine.Transform({x:64, y:64}, 0, {x:32, y:32}))
-    .addComponent(new Engine.BoxCollider({x: 32, y: 32}))
+    .addComponent(new Engine.Transform({x:64, y:64}, 0, {x:16, y:16}))
+    .addComponent(new Engine.BoxCollider({x: 16, y: 16}))
+    .addComponent(new Engine.Camera())
     .addComponent(new Engine.Rigidbody({
         bounciness: 0,
         friction: 0.98,
@@ -63,15 +64,8 @@ app.addObject(new Engine.GameObjectBuilder(app)
 app.addObject(new Engine.GameObjectBuilder(app)
     .addComponent(new Engine.Sprite("/src/assets/image.png"))
     .addComponent(new Engine.Renderer(app.ctx))
-    .addComponent(new Engine.Transform({x:256, y:256}, 0, {x:96, y:512}))
+    .addComponent(new Engine.Transform({x:512, y:256}, 0, {x:96, y:512}))
     .addComponent(new Engine.BoxCollider({x: 96, y: 512}))
-    .build())
-
-app.addObject(new Engine.GameObjectBuilder(app)
-    .addComponent(new Engine.Sprite("/src/assets/image.png"))
-    .addComponent(new Engine.Renderer(app.ctx))
-    .addComponent(new Engine.Transform({x:256, y:0}, 0, {x:512, y:96}))
-    .addComponent(new Engine.BoxCollider({x: 512, y: 96}))
     .build())
 
 app.start(60);
