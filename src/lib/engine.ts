@@ -66,7 +66,7 @@ export function draw(ctx: any, image: HTMLImageElement | HTMLCanvasElement, rota
     ctx.translate(-1*(position.x), -1*(position.y));
 }
 
-class ComponentBase {
+export class ComponentBase {
     public object: GameObject | null = null;
     constructor(object?: GameObject) {
         this.object = object ? object : null;
@@ -309,8 +309,17 @@ export class Rigidbody extends ComponentBase {
                 this.velocity.x *= (-1*((1-this.bodyProps.friction)*b.x) + 1)
                 this.velocity.y *= (-1*((1-this.bodyProps.friction)*b.y) + 1)
 
-                this.velocity.x -= params.collisionVector.x;
-                this.velocity.y -= params.collisionVector.y;
+                const a = vMath.normalize(this.velocity);
+                
+                const scalar = (vMath.dot(a, b) / vMath.magnitude(b)**2) * 2
+                const scaledB = vMath.multiply(b, scalar)
+
+                const r = vMath.subtract(scaledB, a);
+
+                this.velocity = {
+                    x:r.x * vMath.magnitude(this.velocity) * (-1*((1-this.bodyProps.bounciness)*-b.y) + 1) * (-1*((1-this.bodyProps.friction)*b.x) + 1), 
+                    y:r.y * vMath.magnitude(this.velocity) * (-1*((1-this.bodyProps.bounciness)*b.x) + 1) * (-1*((1-this.bodyProps.friction)*b.y) + 1)
+                }
             }
         }
 
@@ -362,8 +371,7 @@ export class PlayerController extends ComponentBase {
 
             if (this.keys["a"]) {
                 this.rigidbody.velocity = {x: this.rigidbody?.velocity.x-0.1, y: this.rigidbody.velocity.y}
-            }
-            if (this.keys["d"]) {
+            } else if (this.keys["d"]) {
                 this.rigidbody.velocity = {x: this.rigidbody?.velocity.x+0.1, y: this.rigidbody.velocity.y}
             }
         }
