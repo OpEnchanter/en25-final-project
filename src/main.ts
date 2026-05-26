@@ -17,7 +17,7 @@ class CameraController extends Engine.ComponentBase {
     override onUpdate(): void {
         if (!this.playerTransform || !this.transform) return;
         this.transform.position.x += (this.playerTransform.position.x - this.transform.position.x) / 4
-        this.transform.position.y += (Math.min(this.playerTransform.position.y+app.viewportScale.y/4, 150) - this.transform.position.y) / 4
+        this.transform.position.y += (Math.min(this.playerTransform.position.y+app.viewportScale.y/4, 200) - this.transform.position.y) / 4
     }
 }
 
