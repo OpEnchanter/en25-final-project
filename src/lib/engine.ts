@@ -134,7 +134,7 @@ export class Renderer extends ComponentBase {
         const cplane = this.object.app.renderingClippingPlane;
         const p = {
             x: Math.round(this.transform.position.x - (cplane.position.x - vscale.x / 2)),
-            y: Math.round(this.transform.position.y - (cplane.position.y - vscale.x / 2))
+            y: Math.round(this.transform.position.y - (cplane.position.y - vscale.y / 2))
         } as vector
         draw(this.ctx, this.sprite?.texture as HTMLImageElement, this.transform?.rotation as number, p, this.transform?.scale as vector)
     }
@@ -363,10 +363,12 @@ export class PlayerController extends ComponentBase {
     }
 
     override onUpdate(): void {
+        const onGround = this.object?.collisionData[0]?.collisionNormal.y == -1
+        const canJump = (this.object?.isColliding && onGround)
         if (this.transform && this.rigidbody) {
-            if (this.keys["w"]) {
+            if (this.keys["w"] && canJump) {
                 this.transform.position = {x: this.transform?.position.x, y: (this.transform?.position.y as number)-1}
-                this.rigidbody.velocity = {x: this.rigidbody?.velocity.x, y: this.rigidbody.velocity.y-0.5}
+                this.rigidbody.velocity = {x: this.rigidbody?.velocity.x, y: this.rigidbody.velocity.y-4}
             }
 
             if (this.keys["a"]) {
@@ -520,7 +522,7 @@ export class App {
 
         if (!this.options.downscaleFactor) return
         const vw = document.body.clientWidth / this.options.downscaleFactor;
-        const vh = document.body.clientWidth / this.options.downscaleFactor;
+        const vh = document.body.clientHeight / this.options.downscaleFactor;
         this.viewportScale = {x:vw, y:vh}
         this.renderingClippingPlane = {
             position: {x:vw/2, y:vh/2},

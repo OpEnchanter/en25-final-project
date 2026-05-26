@@ -82,7 +82,7 @@ const player = new Engine.GameObjectBuilder(app)
     .addComponent(new Engine.BoxCollider({x: 16, y: 16}))
     .addComponent(new SpriteChanger())
     .addComponent(new Engine.Rigidbody({
-        bounciness: 1,
+        bounciness: 0,
         friction: 0.98,
         drag: 0.98,
         density: 9
