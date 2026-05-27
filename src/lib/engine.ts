@@ -1,5 +1,7 @@
 import chalk from "chalk"
 
+let debugEnabled = false;
+
 export type vector = {
     x: number,
     y: number
@@ -10,6 +12,10 @@ export type CollisionData = {
     collisionObjectPosition: vector,
     collisionNormal: vector,
     collisionObjectBounds: vector,
+    object: null | GameObject
+}
+
+export type TriggerData = {
     object: null | GameObject
 }
 
@@ -55,14 +61,17 @@ export function fixScale(canvas: HTMLCanvasElement, downscaleFactor: number) {
 
 export function draw(ctx: any, image: HTMLImageElement | HTMLCanvasElement, rotation: number, position: vector, scale: vector) {
     if (!ctx) {throw new Error("Canvas context not found")}
+    const xscalar = scale.x < 0 ? -1 : 1
     ctx.translate(position.x, position.y);
     ctx.rotate((Math.PI / 180) * rotation);
+    ctx.scale(xscalar, 1)
     ctx.translate(-1*(position.x), -1*(position.y));
 
     ctx.drawImage(image, position.x-(scale.x/2), position.y-(scale.y/2), scale.x, scale.y);
 
     ctx.translate(position.x, position.y);
     ctx.rotate((Math.PI / 180) * -rotation);
+    ctx.scale(xscalar, 1)
     ctx.translate(-1*(position.x), -1*(position.y));
 }
 
@@ -79,9 +88,9 @@ export class ComponentBase {
     onCollisionEnter(params: CollisionData): void {};
     onCollisionExit(): void {};
     onCollisionStay(params: CollisionData): void {};
-    onTriggerEnter(params: CollisionData): void {};
+    onTriggerEnter(params: TriggerData): void {};
     onTriggerExit(): void {};
-    onTriggerStay(params: CollisionData): void {};
+    onTriggerStay(params: TriggerData): void {};
 
     onLateUpdate(): void {};
 
@@ -136,7 +145,9 @@ export class Renderer extends ComponentBase {
             x: Math.round(this.transform.position.x - (cplane.position.x - vscale.x / 2)),
             y: Math.round(this.transform.position.y - (cplane.position.y - vscale.y / 2))
         } as vector
-        draw(this.ctx, this.sprite?.texture as HTMLImageElement, this.transform?.rotation as number, p, this.transform?.scale as vector)
+        if (p.x - Math.abs(this.transform.scale.x) < vscale.x && p.y - Math.abs(this.transform.scale.y) < vscale.y) {
+            draw(this.ctx, this.sprite?.texture as HTMLImageElement, this.transform?.rotation as number, p, this.transform?.scale as vector)
+        }
     }
 }
 
@@ -145,10 +156,14 @@ export class BoxCollider extends ComponentBase {
     transform: Transform | null = null;
     colliders: Array<BoxCollider> = [];
     transforms: Array<Transform> = [];
+    isTrigger: boolean = false;
+    offset: vector = {x:0, y:0};
 
-    constructor(bounds: vector) {
+    constructor(bounds: vector, offset: vector, isTrigger: boolean) {
         super();
         this.bounds = bounds;
+        this.isTrigger = isTrigger;
+        this.offset = offset;
     }
 
     override onInitialized(): void {
@@ -157,8 +172,10 @@ export class BoxCollider extends ComponentBase {
             const oCols = o.getComponents(BoxCollider) as Array<BoxCollider>;
             const transform = o.getComponents(Transform)[0] as Transform;
             oCols.forEach(col => {
-                this.colliders.push(col);
-                this.transforms.push(transform);
+                if (!col.isTrigger) {
+                    this.colliders.push(col);
+                    this.transforms.push(transform);
+                }
             })
         });
     }
@@ -173,13 +190,19 @@ export class BoxCollider extends ComponentBase {
         for (let i = 0; i < this.colliders.length; i++) {
             const b = this.colliders[i]?.bounds;
             const p = this.transforms[i]?.position;
-            if (!b || !p) { continue }
+            const o = this.colliders[i]?.offset
+            if (!b || !p || !o) { continue }
 
-            const ax = tp.x
-            const ay = tp.y
+            const ax = tp.x + this.offset.x
+            const ay = tp.y + this.offset.y
 
-            const bx = p.x
-            const by = p.y
+            if (debugEnabled) {
+                this.object.app.ctx.fillStyle = this.isTrigger ? "#afffaf" : "#ffefaf"
+                this.object.app.ctx.fillRect(ax-this.bounds.x/2 - this.object.app.renderingClippingPlane.position.x + this.object.app.viewportScale.x / 2, ay-this.bounds.y/2 - this.object.app.renderingClippingPlane.position.y + this.object.app.viewportScale.y / 2, this.bounds.x, this.bounds.y)
+            }
+
+            const bx = p.x + o.x
+            const by = p.y + o.y
 
             const dx = ax - bx
             const dy = ay - by
@@ -188,34 +211,41 @@ export class BoxCollider extends ComponentBase {
             const py = (tb.y / 2 + b.y / 2) - Math.abs(dy)
 
             if (px > 0 && py > 0) {
-                this.object.isColliding = true;
+                if (!this.isTrigger) {
+                    this.object.isColliding = true;
 
-                let pv: vector = {
-                    x: dx<0 ? px : -px, 
-                    y: dy<0 ? py : -py
-                };
+                    let pv: vector = {
+                        x: dx<0 ? px : -px, 
+                        y: dy<0 ? py : -py
+                    };
 
-                let mtv: vector;
-                let nv: vector;
+                    let mtv: vector;
+                    let nv: vector;
 
-                if (px < py) {
-                    mtv = { x: pv.x, y: 0 };
-                    nv  = { x: dx < 0 ? -1 : -1, y: 0 };
+                    if (px < py) {
+                        mtv = { x: pv.x, y: 0 };
+                        nv  = { x: dx < 0 ? -1 : 1, y: 0 };
+                    } else {
+                        mtv = { x: 0, y: pv.y };
+                        nv  = { x: 0, y: dy < 0 ? -1 : 1 };
+                    }
+
+                    this.object.collisionData.push({
+                        collisionVector: mtv,
+                        collisionObjectPosition: {
+                            x: p.x,
+                            y: p.y
+                        },
+                        collisionNormal: nv,
+                        collisionObjectBounds: b,
+                        object: this.colliders[i]?.object as GameObject
+                    })
                 } else {
-                    mtv = { x: 0, y: pv.y };
-                    nv  = { x: 0, y: dy < 0 ? -1 : -1 };
+                    this.object.isTriggerred = true;
+                    this.object.triggerData.push({
+                        object: this.colliders[i]?.object as GameObject
+                    });
                 }
-
-                this.object.collisionData.push({
-                    collisionVector: mtv,
-                    collisionObjectPosition: {
-                        x: p.x,
-                        y: p.y
-                    },
-                    collisionNormal: nv,
-                    collisionObjectBounds: b,
-                    object: this.colliders[i]?.object as GameObject
-                })
             }
         }
     }
@@ -258,8 +288,8 @@ export class Rigidbody extends ComponentBase {
         for (const params of data) {
 
             let b = {
-                x: -params.collisionNormal.y,
-                y: params.collisionNormal.x
+                x: Math.abs(params.collisionNormal.y),
+                y: -Math.abs(params.collisionNormal.x)
             }
             
             if (this.transform) {
@@ -284,20 +314,20 @@ export class Rigidbody extends ComponentBase {
                 if (!otherBody) continue
                 const obRb = otherBody.getComponents(Rigidbody)[0] as Rigidbody
                 if (obRb) {
-                    const obDesnity = obRb.bodyProps.density;
+                    const obDensity = obRb.bodyProps.density;
 
                     const density = this.bodyProps.density;
 
-                    const totalDensity = obDesnity + density;
+                    const totalDensity = obDensity + density;
 
                     obRb.velocity = {
-                        x: obRb.velocity.x + vMath.normalize(this.velocity).x * (vMath.magnitude(this.velocity) * (obDesnity/totalDensity)),
-                        y: obRb.velocity.y + vMath.normalize(this.velocity).y * (vMath.magnitude(this.velocity) * (obDesnity/totalDensity))
+                        x: obRb.velocity.x + vMath.normalize(this.velocity).x * (vMath.magnitude(this.velocity) * (density/totalDensity)),
+                        y: obRb.velocity.y + vMath.normalize(this.velocity).y * (vMath.magnitude(this.velocity) * (density/totalDensity))
                     }
 
                     this.velocity = {
-                        x:r.x * (vMath.magnitude(this.velocity) * (density/totalDensity)), 
-                        y:r.y * (vMath.magnitude(this.velocity) * (density/totalDensity))
+                        x:r.x * (vMath.magnitude(this.velocity) * (obDensity/totalDensity)), 
+                        y:r.y * (vMath.magnitude(this.velocity) * (obDensity/totalDensity))
                     }
                 } else {
                     this.velocity = {
@@ -390,6 +420,8 @@ export class GameObject {
     public isCollidingOld: boolean = false;
     public isTriggerredOld: boolean = false;
 
+    public triggerData: Array<TriggerData> = [];
+
     public app: App;
 
     constructor (app: App){
@@ -415,6 +447,7 @@ export class GameObject {
     public onUpdate() {
 
         this.collisionData = [];
+        this.triggerData = [];
 
         for (const m of this.Components) {
             m.onCollisionUpdate();
@@ -452,7 +485,7 @@ export class GameObject {
 
         if (this.isTriggerred && !this.isTriggerredOld) {
             for (const m of this.Components) {
-                for (const col of this.collisionData) {
+                for (const col of this.triggerData) {
                     m.onTriggerEnter(col);
                 }
             }
@@ -541,10 +574,17 @@ export class App {
             this.objects.forEach(object => {
                 object.onInitialized();
             });
+            document.body.addEventListener("keydown", (e) => {
+                if (e.key === "g" && e.altKey) {
+                    e.preventDefault();
+                    debugEnabled = !debugEnabled;
+                }
+            })
             setInterval(() => {
                 const dsf = this.options.downscaleFactor
                 fixScale(this.canvas, dsf ? dsf : 1)
-                this.ctx.clearRect(0, 0, this.canvas.clientWidth, this.canvas.clientHeight);
+                this.ctx.fillStyle = "#9fdfff"
+                this.ctx.fillRect(0, 0, this.canvas.clientWidth, this.canvas.clientHeight);
                 for (const object of this.objects) {
                     object.onUpdate();
                 }
