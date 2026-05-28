@@ -13,6 +13,14 @@ const dynamicObjectFunctions: Record<string, (position: Engine.vector, tileScale
             .addComponent(new Engine.BoxCollider({x: 4, y: 8}, {x:0, y:8}, true))
             .addComponent(new LuckyBlock())
             .build())
+    },
+    "title": (position: Engine.vector, tileScale: number) => {
+        return (new Engine.GameObjectBuilder(app)
+            .addComponent(new Engine.Transform({x:tileScale * position.x, y:tileScale * position.y}, 0, {x:16*tileScale, y:8*tileScale}))
+            .addComponent(new Engine.Sprite("/src/assets/tiles/title.png"))
+            .addComponent(new Engine.Renderer(app.ctx))
+            .addComponent(new Engine.BoxCollider({x: 16, y: 16}, {x:0, y:0}, false))
+            .build())
     }
 };
 
@@ -49,7 +57,7 @@ class CameraController extends Engine.ComponentBase {
     override onUpdate(): void {
         if (!this.playerTransform || !this.transform) return;
         this.transform.position.x += (this.playerTransform.position.x - this.transform.position.x) / 4
-        this.transform.position.y += (Math.min(this.playerTransform.position.y+app.viewportScale.y/2, 24) - this.transform.position.y) / 4
+        this.transform.position.y += (Math.min(this.playerTransform.position.y, -(app.viewportScale.y/2) + 12) - this.transform.position.y) / 16
     }
 }
 
@@ -79,10 +87,10 @@ class PlayerAnimator extends Engine.ComponentBase {
 
     override onUpdate(): void {
         if (!this.sprite || !this.rigidbody || !this.transform) return
-        if (Math.abs(this.rigidbody.velocity.x) > 0.3) {
+        if (Math.abs(this.rigidbody.velocity.x) > 0.5) {
             this.sprite.texture = this.runAnimation[(Math.floor(this.idx) % this.runAnimation.length)];
             this.idx += Math.abs(this.rigidbody.velocity.x / 20);
-            if (this.rigidbody.velocity.x < 0) {
+            if (this.rigidbody.velocity.x < 0.1) {
                 this.transform.scale.x = -12
             } else {
                 this.transform.scale.x = 12
@@ -215,61 +223,13 @@ const app = new Engine.App({
     downscaleFactor: 4
 });
 
-loadWorldFromJson({
-    staticObjects: [
-        {
-            objectId: "null",
-            areaStartPos: {x:-5, y:-6},
-            areaScale: {x:1, y:10},
-            hasCollision: true
-        },
-        {
-            objectId: "brick_grass",
-            areaStartPos: {x:-26, y:4},
-            areaScale: {x:50, y:5},
-            hasCollision: true
-        },
-        {
-            objectId: "brick",
-            areaStartPos: {x:12, y:1},
-            areaScale: {x:2, y:1},
-            hasCollision: true
-        },
-        {
-            objectId: "brick",
-            areaStartPos: {x:15, y:1},
-            areaScale: {x:2, y:1},
-            hasCollision: true
-        },
-        {
-            objectId: "ground_pit",
-            areaStartPos: {x:24, y:4},
-            areaScale: {x:4, y:5},
-            hasCollision: false,
-        },
-        {
-            objectId: "brick_grass",
-            areaStartPos: {x:28, y:4},
-            areaScale: {x:4, y:5},
-            hasCollision: true,
-        },
-    ],
-    dynamicObjects: [
-        {
-            objectId: "lucky_block",
-            position: {x:14, y:1}
-        },
-        {
-            objectId: "lucky_block",
-            position: {x:14, y:-2}
-        }
-    ]
-} as SerializedWorld, app, 16)
+const worldJson = `{"staticObjects":[{"objectId":"null","areaStartPos":{"x":-5,"y":-10},"areaScale":{"x":1,"y":10},"hasCollision":true},{"objectId":"brick_grass","areaStartPos":{"x":-26,"y":0},"areaScale":{"x":50,"y":5},"hasCollision":true},{"objectId":"brick","areaStartPos":{"x":12,"y":-3},"areaScale":{"x":2,"y":1},"hasCollision":true},{"objectId":"brick","areaStartPos":{"x":15,"y":-3},"areaScale":{"x":2,"y":1},"hasCollision":true},{"objectId":"pit","areaStartPos":{"x":24,"y":0},"areaScale":{"x":4,"y":5},"hasCollision":false},{"objectId":"brick_grass","areaStartPos":{"x":28,"y":0},"areaScale":{"x":11,"y":5},"hasCollision":true},{"objectId":"brick","areaStartPos":{"x":30,"y":-1},"areaScale":{"x":3,"y":1},"hasCollision":true},{"objectId":"brick","areaStartPos":{"x":33,"y":-2},"areaScale":{"x":4,"y":2},"hasCollision":true}],"dynamicObjects":[{"objectId":"title","position":{"x":-4,"y":-4}},{"objectId":"lucky_block","position":{"x":14,"y":-3}},{"objectId":"lucky_block","position":{"x":14,"y":-6}},{"objectId":"lucky_block","position":{"x":33,"y":-5}}]}`
+loadWorldFromJson(JSON.parse(worldJson) as SerializedWorld, app, 16)
 
 const player = new Engine.GameObjectBuilder(app)
     .addComponent(new Engine.Sprite("/src/assets/mario.png"))
     .addComponent(new Engine.Renderer(app.ctx))
-    .addComponent(new Engine.Transform({x:-64, y:32}, 0, {x:12, y:16}))
+    .addComponent(new Engine.Transform({x:-64, y:-24}, 0, {x:12, y:16}))
     .addComponent(new Engine.BoxCollider({x: 12, y: 16}, {x:0, y:0}, false))
     .addComponent(new PlayerAnimator())
     .addComponent(new Engine.Rigidbody({
@@ -284,7 +244,7 @@ const player = new Engine.GameObjectBuilder(app)
 app.addObject(player)
 
 app.addObject(new Engine.GameObjectBuilder(app)
-    .addComponent(new Engine.Transform({x:0, y:0}, 0, {x:0, y:0}))
+    .addComponent(new Engine.Transform({x:-64, y:-512}, 0, {x:0, y:0}))
     .addComponent(new Engine.Camera())
     .addComponent(new CameraController(player.getComponents(Engine.Transform)[0] as Engine.Transform))
     .build())

@@ -4,7 +4,7 @@
         ["brick", "brick", "brick"],
         ["brick", "brick", "brick"]
     ],
-    "ground_pit": [
+    "pit": [
         ["brick-dark-half", "brick-dark-half", "brick-dark-half"],
         ["brick-dark", "brick-dark", "brick-dark"],
         ["brick-dark", "brick-dark", "brick-dark"]

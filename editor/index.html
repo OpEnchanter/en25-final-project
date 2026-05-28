@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <link rel="stylesheet" href="/src/index.css">
+        <link rel="stylesheet" href="/src/editor.css"> 
+    </head>
+    <body>
+        <div class="exportedLevel">
+            <textarea id="export"></textarea>
+        </div>
+        <div class="objectSelector">
+            <button id="exportLevelButton">Export Level</button>
+            <button id="importLevelButton">Import Level</button>
+            <h2>Tiles</h2>
+            <div id="tileList" class="tilePicker"></div>
+            <h2>Tilesets</h2>
+            <div id="tilesetList" class="tilePicker"></div>
+            <h2>Dynamic Objects</h2>
+            <div id="dynamicObjectList" class="tilePicker"></div>
+        </div>
+        <div class="objectProperties">
+            <h2>Properties</h2>
+            <div id="objectProps"></div>
+        </div>
+        <script type="module" src="/src/editor.ts"></script>
+    </body>
+</html>
