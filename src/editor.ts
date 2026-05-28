@@ -28,14 +28,18 @@ playerSprite.src="/src/assets/tiles/flag.png";
 
 const tileNameAliases: Record<string, string> = {
     "null": "Invisible",
-    "brick": "Brick",
-    "brick-dark": "Dark Bricks",
-    "brick-grass/brick-grass": "Grass Bricks",
-    "brick-grass/brick-grass-top-left": "Grass Bricks TL",
-    "brick-grass/brick-grass-top-right": "Grass Bricks TR",
+    "brick/brick": "Bricks",
+    "brick/brick-dark": "Dark Bricks",
+    "brick/grass/brick-grass": "Grass Bricks",
+    "brick/grass/brick-grass-top-left": "Grass Bricks TL",
+    "brick/grass/brick-grass-top-right": "Grass Bricks TR",
+    "stone-bricks/stone-bricks": "Stone Bricks",
+    "stone-bricks/stone-bricks-dark": "Dark Stone Bricks",
+    "stone-bricks/grass/stone-bricks-grass": "Grass Stone Bricks",
 
     "brick_grass": "Grass Bricks",
-    "pit": "Pit",
+    "brick_pit": "Brick Pit",
+    "stone_brick_grass": "Stone Bricks Grass",
 
     "lucky_block": "Lucky Block",
     "title": "Title"
@@ -44,11 +48,14 @@ const tileNameAliases: Record<string, string> = {
 // Define static and dynamic tiles and tile sets
 const tiles: Array<string> = [
     "null",
-    "brick",
-    "brick-dark",
-    "brick-grass/brick-grass",
-    "brick-grass/brick-grass-top-left",
-    "brick-grass/brick-grass-top-right"
+    "brick/brick",
+    "brick/brick-dark",
+    "brick/grass/brick-grass",
+    "brick/grass/brick-grass-top-left",
+    "brick/grass/brick-grass-top-right",
+    "stone-bricks/stone-bricks",
+    "stone-bricks/stone-bricks-dark",
+    "stone-bricks/grass/stone-bricks-grass"
 ]
 
 const dynamicTiles: Record<string, {spriteName:string, scale: Engine.vector, objectDataShape:Record<string, string>}> = {

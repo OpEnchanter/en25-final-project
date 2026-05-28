@@ -1,12 +1,17 @@
 {
     "brick_grass": [
-        ["brick-grass/brick-grass-top-left", "brick-grass/brick-grass", "brick-grass/brick-grass-top-right"],
-        ["brick", "brick", "brick"],
-        ["brick", "brick", "brick"]
+        ["brick/grass/brick-grass-top-left", "brick/grass/brick-grass", "brick/grass/brick-grass-top-right"],
+        ["brick/brick", "brick/brick", "brick/brick"],
+        ["brick/brick", "brick/brick", "brick/brick"]
     ],
-    "pit": [
-        ["brick-dark-half", "brick-dark-half", "brick-dark-half"],
-        ["brick-dark", "brick-dark", "brick-dark"],
-        ["brick-dark", "brick-dark", "brick-dark"]
+    "brick_pit": [
+        ["brick/brick-dark-half", "brick/brick-dark-half", "brick/brick-dark-half"],
+        ["brick/brick-dark", "brick/brick-dark", "brick/brick-dark"],
+        ["brick/brick-dark", "brick/brick-dark", "brick/brick-dark"]
+    ],
+    "stone_brick_grass": [
+        ["stone-bricks/grass/stone-bricks-grass-top-left", "stone-bricks/grass/stone-bricks-grass", "stone-bricks/grass/stone-bricks-grass-top-right"],
+        ["stone-bricks/stone-bricks", "stone-bricks/stone-bricks", "stone-bricks/stone-bricks"],
+        ["stone-bricks/stone-bricks", "stone-bricks/stone-bricks", "stone-bricks/stone-bricks"]
     ]
 }
