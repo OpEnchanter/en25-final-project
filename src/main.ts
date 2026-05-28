@@ -19,7 +19,6 @@ const dynamicObjectFunctions: Record<string, (position: Engine.vector, tileScale
             .addComponent(new Engine.Transform({x:tileScale * position.x, y:tileScale * position.y}, 0, {x:16*tileScale, y:8*tileScale}))
             .addComponent(new Engine.Sprite("/src/assets/tiles/title.png"))
             .addComponent(new Engine.Renderer(app.ctx))
-            .addComponent(new Engine.BoxCollider({x: 16, y: 16}, {x:0, y:0}, false))
             .build())
     }
 };

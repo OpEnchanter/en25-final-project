@@ -360,6 +360,8 @@ class EditorRenderer extends Engine.ComponentBase {
             })
 
             if (!select) {
+                let newDyn = false;
+                let newSta = false;
                 if (selectedStaticObject == -1 && selectedDynamicObject == -1) {
                     if (Object.keys(dynamicTiles).includes(currentTile)) {
                         scene.dynamicObjects.push({
@@ -367,6 +369,7 @@ class EditorRenderer extends Engine.ComponentBase {
                             position: {x:Math.round(wp.x / 16), y:Math.round(wp.y / 16)},
                             objectData: structuredClone(dynamicTiles[currentTile]?.objectDataShape) as Record<string, string>
                         })
+                        newDyn = true;
                     } else {
                         scene.staticObjects.push({
                             objectId: currentTile,
@@ -374,9 +377,10 @@ class EditorRenderer extends Engine.ComponentBase {
                             areaScale: {x:2, y:2},
                             hasCollision: true
                         })
+                        newSta = true;
                     }
                 }
-
+                
                 selectedStaticObject = -1;
                 selectedDynamicObject = -1;
             }
