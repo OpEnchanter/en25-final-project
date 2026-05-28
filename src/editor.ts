@@ -73,7 +73,7 @@ class CameraController extends Engine.ComponentBase {
 }
 
 const playerSprite = new window.Image();
-playerSprite.src="/src/assets/mario.png";
+playerSprite.src="/src/assets/bennet/standing.png";
 
 const tiles: Array<string> = [
     "null",
@@ -153,7 +153,6 @@ for (const t of tileSets) {
 
         radio.addEventListener("change", (e) => {
             currentTile = e?.target?.value;
-
             if (selectedStaticObject !== -1) {
                 const obj: StaticObject = scene.staticObjects[selectedStaticObject] as StaticObject
                 if (obj == undefined) return
@@ -189,12 +188,6 @@ for (const o of Object.keys(dynamicTiles)) {
 
         radio.addEventListener("change", (e) => {
             currentTile = e?.target?.value;
-
-            if (selectedStaticObject !== -1) {
-                const obj: StaticObject = scene.staticObjects[selectedStaticObject] as StaticObject
-                if (obj == undefined) return
-                obj.objectId = currentTile;
-            }
         })
 
         return e;
@@ -489,7 +482,7 @@ class EditorRenderer extends Engine.ComponentBase {
         }
 
         // Draw player spawn
-        Engine.draw(ctx, playerSprite, 0, {x:-64 - app.renderingClippingPlane.position.x, y:-24 - app.renderingClippingPlane.position.y}, {x:16, y:16})
+        Engine.draw(ctx, playerSprite, 0, {x:-64 - app.renderingClippingPlane.position.x, y:-24 - app.renderingClippingPlane.position.y}, {x:12, y:16})
     }
 }
 
@@ -505,6 +498,13 @@ document.getElementById("importLevelButton")?.addEventListener("click", (e) => {
     const exportedTextArea = document.getElementById("export");
     if (!exportedTextArea) return;
     scene = JSON.parse(exportedTextArea.value as string);
+})
+
+document.getElementById("playtestButton")?.addEventListener("click", (e) => {
+    console.log("Playtesting")
+    const exportedTextArea = document.getElementById("export");
+    if (!exportedTextArea) return;
+    window.open(`/?map=${JSON.stringify(scene)}`)
 })
 
 
