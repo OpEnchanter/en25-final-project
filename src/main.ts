@@ -32,8 +32,9 @@ type StaticObject = {
 }
 
 type DynamicObject = {
-    objectId: string
-    position: Engine.vector
+    objectId: string,
+    position: Engine.vector,
+    objectData: Record<string, string>
 }
 
 type SerializedWorld = {
@@ -229,6 +230,8 @@ const queryString = window.location.search;
 const urlParams = new URLSearchParams(queryString);
 
 worldJson = urlParams.get("map") ? urlParams.get("map") as string : worldJson
+
+document.title = urlParams.get("map") ? "Custom Map" : "Campaign"
 
 loadWorldFromJson(JSON.parse(worldJson) as SerializedWorld, app, 16)
 

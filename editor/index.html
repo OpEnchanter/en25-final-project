@@ -3,12 +3,16 @@
     <head>
         <link rel="stylesheet" href="/src/index.css">
         <link rel="stylesheet" href="/src/editor.css"> 
+        <title>Editor</title>
     </head>
     <body>
+        <button class="menuButton" id="menuButton">
+            <img src="/src/web/menu.svg">
+        </button>
         <div class="exportedLevel">
-            <textarea id="export"></textarea>
+            <textarea id="export" placeholder="Put text here for imports or copy text from here for exports"></textarea>
         </div>
-        <div class="objectSelector">
+        <div class="objectSelector sidebar" id="sidebar">
             <div class="buttonSection">
                 <button id="exportLevelButton">Export Level</button>
                 <button id="importLevelButton">Import Level</button>
@@ -23,7 +27,7 @@
             <h2>Dynamic Objects</h2>
             <div id="dynamicObjectList" class="tilePicker"></div>
         </div>
-        <div class="objectProperties">
+        <div class="objectProperties sidebar" id="sidebar">
             <h2>Properties</h2>
             <div id="objectProps"></div>
         </div>

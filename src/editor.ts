@@ -14,24 +14,181 @@ type StaticObject = {
 
 type DynamicObject = {
     objectId: string,
-    position: Engine.vector
-}
-
-type ExportableStaticObjct = {
-    objectId: string,
-    areaStartPos: number[],
-    areaScale: number[],
-    hasCollision: boolean
-}
-
-type ExportableDynamicObjct = {
-    objectId: string,
-    position: number[]
+    position: Engine.vector,
+    objectData: Record<string, string>
 }
 
 type SerializedWorld = {
     staticObjects: Array<StaticObject>
     dynamicObjects: Array<DynamicObject>
+}
+
+const playerSprite = new window.Image();
+playerSprite.src="/src/assets/tiles/flag.png";
+
+const tileNameAliases: Record<string, string> = {
+    "null": "Invisible",
+    "brick": "Brick",
+    "brick-dark": "Dark Bricks",
+    "brick-grass/brick-grass": "Grass Bricks",
+    "brick-grass/brick-grass-top-left": "Grass Bricks TL",
+    "brick-grass/brick-grass-top-right": "Grass Bricks TR",
+
+    "brick_grass": "Grass Bricks",
+    "pit": "Pit",
+
+    "lucky_block": "Lucky Block",
+    "title": "Title"
+}
+
+// Define static and dynamic tiles and tile sets
+const tiles: Array<string> = [
+    "null",
+    "brick",
+    "brick-dark",
+    "brick-grass/brick-grass",
+    "brick-grass/brick-grass-top-left",
+    "brick-grass/brick-grass-top-right"
+]
+
+const dynamicTiles: Record<string, {spriteName:string, scale: Engine.vector, objectDataShape:Record<string, string>}> = {
+    "lucky_block": {spriteName:"lucky", scale:{x:16, y:16}, objectDataShape:{contents:""}},
+    "title": {spriteName:"title", scale:{x:256, y:128}, objectDataShape:{}}
+}
+
+const tileSets: Array<string> = Object.keys(tileset);
+
+let currentTile = "brick";
+
+const tilePicker = document.getElementById("tileList");
+const tilesetPicker = document.getElementById("tilesetList");
+const objectPicker = document.getElementById("dynamicObjectList");
+for (const t of tiles) {
+    tilePicker?.appendChild((()=>{
+        const e = document.createElement("label");
+        e.className = "tile";
+
+        const radio = document.createElement("input");
+        radio.type = "radio";
+        radio.name = "tiles";
+        radio.value = t;
+
+        const img = document.createElement("img");
+        img.src = `/src/assets/tiles/${t}.png`;
+        img.width = 16;
+        img.height = 16;
+
+        const span = document.createElement("span");
+        span.innerText = tileNameAliases[t] as string;
+
+        e.appendChild(radio);
+        e.appendChild(img);
+        e.appendChild(span);
+
+        radio.addEventListener("change", (e) => {
+            currentTile = e?.target?.value;
+
+            if (selectedStaticObject !== -1) {
+                const obj: StaticObject = scene.staticObjects[selectedStaticObject] as StaticObject
+                if (obj == undefined) return
+                obj.objectId = currentTile;
+            }
+        })
+
+        return e;
+    })())
+}
+
+for (const t of tileSets) {
+    tilesetPicker?.appendChild((()=>{
+        const e = document.createElement("label");
+        e.className = "tile";
+
+        const radio = document.createElement("input");
+        radio.type = "radio";
+        radio.name = "tiles";
+        radio.value = t;
+
+        const img = document.createElement("img");
+        img.src = `/src/assets/tiles/${(tileset[t] as Array<Array<string>>)[0]?.[0] as string}.png`;
+        img.width = 16;
+        img.height = 16;
+
+        const span = document.createElement("span");
+        span.innerText = tileNameAliases[t] as string;
+
+        e.appendChild(radio);
+        e.appendChild(img);
+        e.appendChild(span);
+
+        radio.addEventListener("change", (e) => {
+            currentTile = e?.target?.value;
+            if (selectedStaticObject !== -1) {
+                const obj: StaticObject = scene.staticObjects[selectedStaticObject] as StaticObject
+                if (obj == undefined) return
+                obj.objectId = currentTile;
+            }
+        })
+
+        return e;
+    })())
+}
+
+for (const o of Object.keys(dynamicTiles)) {
+    objectPicker?.appendChild((()=>{
+        const e = document.createElement("label");
+        e.className = "tile";
+
+        const radio = document.createElement("input");
+        radio.type = "radio";
+        radio.name = "tiles";
+        radio.value = o;
+
+        const img = document.createElement("img");
+        img.src = `/src/assets/tiles/${dynamicTiles[o]?.spriteName}.png`;
+        img.width = 16;
+        img.height = 16;
+
+        const span = document.createElement("span");
+        span.innerText = tileNameAliases[o] as string;
+
+        e.appendChild(radio);
+        e.appendChild(img);
+        e.appendChild(span);
+
+        radio.addEventListener("change", (e) => {
+            currentTile = e?.target?.value;
+        })
+
+        return e;
+    })())
+}
+
+// Create image cache for tile rendering
+let tileImageCache: Record<string, HTMLImageElement> = {}
+
+tileImageCache["editor-null"] = new window.Image();
+tileImageCache["editor-null"].src = "/src/assets/tiles/editor-null.png"
+
+for (const tile of tiles) {
+    tileImageCache[tile] = new window.Image();
+    tileImageCache[tile].src = `/src/assets/tiles/${tile}.png`
+}
+
+for (const set of Object.keys(tileset)) {
+    for (let x = 0; x<3; x++) {
+        for (let y = 0; y<3; y++) {
+            if (!tileset[set]) continue
+            const tilename = tileset[set]?.[y]?.[x] as string
+            tileImageCache[tilename] = new window.Image();
+            tileImageCache[tilename].src = `/src/assets/tiles/${tilename}.png`
+        }
+    }
+}
+
+for (const obj of Object.keys(dynamicTiles)) {
+    tileImageCache[obj] = new window.Image();
+    tileImageCache[obj].src = `/src/assets/tiles/${dynamicTiles[obj]?.spriteName}.png`
 }
 
 class CameraController extends Engine.ComponentBase {
@@ -72,156 +229,6 @@ class CameraController extends Engine.ComponentBase {
     }
 }
 
-const playerSprite = new window.Image();
-playerSprite.src="/src/assets/bennet/standing.png";
-
-const tiles: Array<string> = [
-    "null",
-    "brick",
-    "brick-dark"
-]
-
-const dynamicTiles: Record<string, {spriteName:string, scale: Engine.vector}> = {
-    "lucky_block": {spriteName:"lucky", scale:{x:16, y:16}},
-    "title": {spriteName:"title", scale:{x:256, y:128}}
-}
-
-const tileSets: Array<string> = Object.keys(tileset);
-
-let currentTile = "brick";
-
-const tilePicker = document.getElementById("tileList");
-const tilesetPicker = document.getElementById("tilesetList");
-const objectPicker = document.getElementById("dynamicObjectList");
-for (const t of tiles) {
-    tilePicker?.appendChild((()=>{
-        const e = document.createElement("label");
-        e.className = "tile";
-
-        const radio = document.createElement("input");
-        radio.type = "radio";
-        radio.name = "tiles";
-        radio.value = t;
-
-        const img = document.createElement("img");
-        img.src = `/src/assets/tiles/${t}.png`;
-        img.width = 16;
-        img.height = 16;
-
-        const span = document.createElement("span");
-        span.innerText = t;
-
-        e.appendChild(radio);
-        e.appendChild(img);
-        e.appendChild(span);
-
-        radio.addEventListener("change", (e) => {
-            currentTile = e?.target?.value;
-
-            if (selectedStaticObject !== -1) {
-                const obj: StaticObject = scene.staticObjects[selectedStaticObject] as StaticObject
-                if (obj == undefined) return
-                obj.objectId = currentTile;
-            }
-        })
-
-        return e;
-    })())
-}
-
-for (const t of tileSets) {
-    tilesetPicker?.appendChild((()=>{
-        const e = document.createElement("label");
-        e.className = "tile";
-
-        const radio = document.createElement("input");
-        radio.type = "radio";
-        radio.name = "tiles";
-        radio.value = t;
-
-        const img = document.createElement("img");
-        img.src = `/src/assets/tiles/${(tileset[t] as Array<Array<string>>)[0]?.[0] as string}.png`;
-        img.width = 16;
-        img.height = 16;
-
-        const span = document.createElement("span");
-        span.innerText = t;
-
-        e.appendChild(radio);
-        e.appendChild(img);
-        e.appendChild(span);
-
-        radio.addEventListener("change", (e) => {
-            currentTile = e?.target?.value;
-            if (selectedStaticObject !== -1) {
-                const obj: StaticObject = scene.staticObjects[selectedStaticObject] as StaticObject
-                if (obj == undefined) return
-                obj.objectId = currentTile;
-            }
-        })
-
-        return e;
-    })())
-}
-
-for (const o of Object.keys(dynamicTiles)) {
-    objectPicker?.appendChild((()=>{
-        const e = document.createElement("label");
-        e.className = "tile";
-
-        const radio = document.createElement("input");
-        radio.type = "radio";
-        radio.name = "tiles";
-        radio.value = o;
-
-        const img = document.createElement("img");
-        img.src = `/src/assets/tiles/${dynamicTiles[o]?.spriteName}.png`;
-        img.width = 16;
-        img.height = 16;
-
-        const span = document.createElement("span");
-        span.innerText = o;
-
-        e.appendChild(radio);
-        e.appendChild(img);
-        e.appendChild(span);
-
-        radio.addEventListener("change", (e) => {
-            currentTile = e?.target?.value;
-        })
-
-        return e;
-    })())
-}
-
-let tileImageCache: Record<string, HTMLImageElement> = {}
-
-tileImageCache["editor-null"] = new window.Image();
-tileImageCache["editor-null"].src = "/src/assets/tiles/editor-null.png"
-
-for (const tile of tiles) {
-    tileImageCache[tile] = new window.Image();
-    tileImageCache[tile].src = `/src/assets/tiles/${tile}.png`
-}
-
-for (const set of Object.keys(tileset)) {
-    for (let x = 0; x<3; x++) {
-        for (let y = 0; y<3; y++) {
-            if (!tileset[set]) continue
-            const tilename = tileset[set]?.[y]?.[x] as string
-            tileImageCache[tilename] = new window.Image();
-            tileImageCache[tilename].src = `/src/assets/tiles/${tilename}.png`
-        }
-    }
-}
-
-for (const obj of Object.keys(dynamicTiles)) {
-    tileImageCache[obj] = new window.Image();
-    tileImageCache[obj].src = `/src/assets/tiles/${dynamicTiles[obj]?.spriteName}.png`
-}
-
-console.log(tileImageCache);
-
 class EditorRenderer extends Engine.ComponentBase {
     isMouseDown: boolean = false;
     isDragging: boolean = false;
@@ -255,8 +262,6 @@ class EditorRenderer extends Engine.ComponentBase {
                 y: (e.clientY / app.options.downscaleFactor + app.renderingClippingPlane.position.y)
             }
 
-            console.log(wpnr);
-
             let select = false;
             scene.staticObjects.forEach(o => {
                 const rhPos = {
@@ -276,6 +281,7 @@ class EditorRenderer extends Engine.ComponentBase {
                     objProps.innerHTML = "";
                     
                     const collisionEnabledContainer = document.createElement("label")
+                    collisionEnabledContainer.className = "propContainer"
 
                     const collisionEnabledCheckbox = document.createElement("input")
                     collisionEnabledCheckbox.checked = o.hasCollision;
@@ -325,6 +331,26 @@ class EditorRenderer extends Engine.ComponentBase {
                     if (!objProps) return
                     objProps.innerHTML = "";
 
+                    for (const prop of Object.keys(o.objectData)) {
+                        const propContainer = document.createElement("label")
+                        propContainer.className = "propContainer"
+
+                        const propInput = document.createElement("input")
+                        propInput.value = o.objectData[prop] as string;
+                        propInput.type = "text"
+
+                        propInput.addEventListener("change", (e) => {
+                            o.objectData[prop] = e?.target?.value;
+                        })
+
+                        const propText = document.createElement("span");
+                        propText.innerText = prop
+
+                        propContainer.appendChild(propText);
+                        propContainer.appendChild(propInput);
+                        objProps?.appendChild(propContainer);
+                    }
+
                     this.isDragging = scene.dynamicObjects.indexOf(o) == selectedDynamicObject
                     this.offset = {x:(wp.x - o.position.x * 16), y:(wp.y - o.position.y * 16)}
                     
@@ -336,10 +362,11 @@ class EditorRenderer extends Engine.ComponentBase {
             if (!select) {
                 if (selectedStaticObject == -1 && selectedDynamicObject == -1) {
                     if (Object.keys(dynamicTiles).includes(currentTile)) {
-                            scene.dynamicObjects.push({
-                                objectId: currentTile,
-                                position: {x:Math.round(wp.x / 16), y:Math.round(wp.y / 16)}
-                            })
+                        scene.dynamicObjects.push({
+                            objectId: currentTile,
+                            position: {x:Math.round(wp.x / 16), y:Math.round(wp.y / 16)},
+                            objectData: structuredClone(dynamicTiles[currentTile]?.objectDataShape) as Record<string, string>
+                        })
                     } else {
                         scene.staticObjects.push({
                             objectId: currentTile,
@@ -505,6 +532,32 @@ document.getElementById("playtestButton")?.addEventListener("click", (e) => {
     const exportedTextArea = document.getElementById("export");
     if (!exportedTextArea) return;
     window.open(`/?map=${JSON.stringify(scene)}`)
+})
+
+let menuOpen = false;
+function updateSidebar() {
+    for (const elem of document.getElementsByClassName("sidebar")) {
+        elem.style.transform = menuOpen ? "translateX(0%)" : "translateX(100%)";
+    }
+
+    const levelExport = document.querySelector(".exportedLevel")
+    if (!levelExport) return
+    levelExport.style.transform = menuOpen ? "translateX(0%)" : "translateX(calc(-100% - 24px))";
+}
+
+updateSidebar()
+document.getElementById("menuButton")?.addEventListener("click", (e) => {
+    console.log("MENU")
+    menuOpen = !menuOpen;
+    updateSidebar()
+})
+
+document.body.addEventListener("keydown", (e) => {
+    if (e.key === "Tab") {
+        e.preventDefault();
+        menuOpen = !menuOpen;
+        updateSidebar();
+    }
 })
 
 
