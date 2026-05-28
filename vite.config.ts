@@ -3,6 +3,9 @@ import { resolve } from "path";
 
 export default defineConfig({
     appType: 'mpa',
+    server: {
+        allowedHosts: ["bennet.tgreenhagen.com"]
+    },
     preview: {
         allowedHosts: ["bennet.tgreenhagen.com"]
     },
