@@ -1,6 +1,8 @@
 import * as Engine from "./lib/engine.ts";
 import chalk from "chalk";
 
+import tilesets from "./assets/tiles/tilesets.json"
+
 const dynamicObjectFunctions: Record<string, (position: Engine.vector, tileScale: number)=>Engine.GameObject> = {
     "lucky_block": (position: Engine.vector, tileScale: number)=>{
         return (new Engine.GameObjectBuilder(app)
@@ -125,6 +127,9 @@ class LuckyBlock extends Engine.ComponentBase {
     }
 }
 
+console.log(tilesets)
+const tileset: Record<string, Array<Array<string>>> = tilesets;
+
 function loadWorldFromJson(world: SerializedWorld, app: Engine.App, tileScale: number) {
     const staticObjects = world.staticObjects;
     for (const object of staticObjects) {
@@ -136,12 +141,48 @@ function loadWorldFromJson(world: SerializedWorld, app: Engine.App, tileScale: n
                 .addComponent(new Engine.BoxCollider({x:tileScale*k.x, y:tileScale*k.y}, {x:0, y:0}, false))
                 .build())
         }
-        if (object.objectId !== 'null') {
+        if (object.objectId !== 'null' && Object.keys(tileset)) {
+            const isTileset = Object.keys(tileset).includes(object.objectId) ? true : false;
+            let spriteSrc =  isTileset ? "" : `/src/assets/tiles/${object.objectId}.png`
+            console.log(spriteSrc)
             for (let b = 0; b < k.x; b++) {
                 for (let i = 0; i < k.y; i++) {
+                        if (isTileset) {
+                            // Corner Conditions
+                            const corners: Array<Engine.vector> = [
+                                {x: 0, y: 0},
+                                {x: k.x-1, y: 0},
+                                {x: 0, y: k.y-1},
+                                {x: k.x-1, y: k.y-1}
+                            ]
+                            const cornerTilesetPositions: Array<Engine.vector> = [{x: 0, y: 0}, {x: 2, y: 0}, {x: 0, y: 2}, {x: 2, y: 2}]
+
+                            let tileType = {x: 1, y: 1} as Engine.vector | undefined;
+                            const pos = {x: b, y: i};
+
+                            if (corners.some(corner => corner.x == pos.x && corner.y == pos.y)) {
+                                console.log("CORNER")
+                                tileType = cornerTilesetPositions[corners.findIndex(corner => corner.x == pos.x && corner.y == pos.y)];
+                                console.log(corners.findIndex(corner => corner.x == pos.x && corner.y == pos.y))
+                            } else {
+                                tileType = pos.x === 0 ? {x: 0, y: 1} : tileType;
+                                tileType = pos.x === k.x ? {x: 2, y: 1} : tileType;
+
+                                tileType = pos.y === 0 ? {x: 1, y: 0} : tileType;
+                                tileType = pos.y === k.y ? {x: 1, y: 2} : tileType;
+                            }
+
+                            if (tileType === undefined) {
+                                console.log(`[${chalk.red("Error")}] Tile not found!`)
+                                continue
+                            } else {
+                                if (!tileset[object.objectId]?.[tileType.y]?.[tileType.x]) continue
+                                spriteSrc = `/src/assets/tiles/${tileset[object.objectId]?.[tileType.y]?.[tileType.x] as string}.png`
+                            }
+                        }
                         let o: Engine.GameObject = new Engine.GameObjectBuilder(app)
                             .addComponent(new Engine.Transform({x:f.x*tileScale+(tileScale*b), y:f.y*tileScale+(tileScale*i)}, 0, {x:tileScale, y:tileScale}))
-                            .addComponent(new Engine.Sprite(`/src/assets/tiles/${object.objectId}.png`))
+                            .addComponent(new Engine.Sprite(spriteSrc))
                             .addComponent(new Engine.Renderer(app.ctx))
                             .build();
                         app.addObject(o)
@@ -183,15 +224,9 @@ loadWorldFromJson({
             hasCollision: true
         },
         {
-            objectId: "brick-grass",
+            objectId: "brick_grass",
             areaStartPos: {x:-26, y:4},
-            areaScale: {x:50, y:1},
-            hasCollision: true
-        },
-        {
-            objectId: "brick",
-            areaStartPos: {x:-26, y:5},
-            areaScale: {x:50, y:4},
+            areaScale: {x:50, y:5},
             hasCollision: true
         },
         {
@@ -207,29 +242,17 @@ loadWorldFromJson({
             hasCollision: true
         },
         {
-            objectId: "brick-dark",
-            areaStartPos: {x:24, y:5},
-            areaScale: {x:4, y:4},
-            hasCollision: false,
-        },
-        {
-            objectId: "brick-dark-half",
+            objectId: "ground_pit",
             areaStartPos: {x:24, y:4},
-            areaScale: {x:4, y:1},
+            areaScale: {x:4, y:5},
             hasCollision: false,
         },
         {
-            objectId: "brick-grass",
+            objectId: "brick_grass",
             areaStartPos: {x:28, y:4},
-            areaScale: {x:4, y:1},
+            areaScale: {x:4, y:5},
             hasCollision: true,
         },
-        {
-            objectId: "brick",
-            areaStartPos: {x:28, y:5},
-            areaScale: {x:4, y:3},
-            hasCollision: true,
-        }
     ],
     dynamicObjects: [
         {

@@ -1,0 +1,12 @@
+{
+    "brick_grass": [
+        ["brick-grass/brick-grass-top-left", "brick-grass/brick-grass", "brick-grass/brick-grass-top-right"],
+        ["brick", "brick", "brick"],
+        ["brick", "brick", "brick"]
+    ],
+    "ground_pit": [
+        ["brick-dark-half", "brick-dark-half", "brick-dark-half"],
+        ["brick-dark", "brick-dark", "brick-dark"],
+        ["brick-dark", "brick-dark", "brick-dark"]
+    ]
+}
