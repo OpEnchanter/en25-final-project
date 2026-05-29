@@ -1,9 +1,9 @@
 import * as Engine from "./lib/engine.ts";
 import chalk from "chalk";
 
-import tilesets from "./assets/tiles/tilesets.json"
+import tiledata from "./assets/tiles/tiledata.json"
 
-const tileset: Record<string, Array<Array<string>>> = tilesets;
+const tileset: Record<string, Array<Array<string>>> = tiledata.tilesets;
 
 type StaticObject = {
     objectId: string,
@@ -26,42 +26,12 @@ type SerializedWorld = {
 const playerSprite = new window.Image();
 playerSprite.src="/src/assets/tiles/flag.png";
 
-const tileNameAliases: Record<string, string> = {
-    "null": "Invisible",
-    "brick/brick": "Bricks",
-    "brick/brick-dark": "Dark Bricks",
-    "brick/grass/brick-grass": "Grass Bricks",
-    "brick/grass/brick-grass-top-left": "Grass Bricks TL",
-    "brick/grass/brick-grass-top-right": "Grass Bricks TR",
-    "stone-bricks/stone-bricks": "Stone Bricks",
-    "stone-bricks/stone-bricks-dark": "Dark Stone Bricks",
-    "stone-bricks/grass/stone-bricks-grass": "Grass Stone Bricks",
-
-    "brick_grass": "Grass Bricks",
-    "brick_pit": "Brick Pit",
-    "stone_brick_grass": "Stone Bricks Grass",
-
-    "lucky_block": "Lucky Block",
-    "title": "Title"
-}
+const tileNameAliases: Record<string, string> = tiledata.translation;
 
 // Define static and dynamic tiles and tile sets
-const tiles: Array<string> = [
-    "null",
-    "brick/brick",
-    "brick/brick-dark",
-    "brick/grass/brick-grass",
-    "brick/grass/brick-grass-top-left",
-    "brick/grass/brick-grass-top-right",
-    "stone-bricks/stone-bricks",
-    "stone-bricks/stone-bricks-dark",
-    "stone-bricks/grass/stone-bricks-grass"
-]
+const tiles: Array<string> = tiledata.tiles.static;
 
-const dynamicTiles: Record<string, {spriteName:string, scale: Engine.vector, objectDataShape:Record<string, string>}> = {
-    "lucky_block": {spriteName:"lucky", scale:{x:16, y:16}, objectDataShape:{contents:""}},
-    "title": {spriteName:"title", scale:{x:256, y:128}, objectDataShape:{}}
-}
+const dynamicTiles: Record<string, {spriteName:string, scale: Engine.vector, objectDataShape:Record<string, string>}> = tiledata.tiles.dynamic;
 
 const tileSets: Array<string> = Object.keys(tileset);
 
@@ -250,7 +220,7 @@ class EditorRenderer extends Engine.ComponentBase {
                     scene.staticObjects.splice(selectedStaticObject, 1);
                     selectedStaticObject = -1;
                 } else if (selectedDynamicObject != -1) {
-                    scene.dynamicObjects.splice(selectedStaticObject, 1);
+                    scene.dynamicObjects.splice(selectedDynamicObject, 1);
                     selectedDynamicObject = -1;
                 }
             }
@@ -275,7 +245,7 @@ class EditorRenderer extends Engine.ComponentBase {
                     x:o.areaStartPos.x * 16 - 8 + (o.areaScale.x * 16), 
                     y:o.areaStartPos.y * 16 - 8 + (o.areaScale.y * 16)
                 }
-                const mouseNearResize = scene.staticObjects[selectedStaticObject] === o && Engine.vMath.magnitude({x:rhPos.x - wpnr.x, y:rhPos.y - wpnr.y}) <= 8
+                const mouseNearResize = scene.staticObjects[selectedStaticObject] === o && Engine.vMath.magnitude({x:rhPos.x - wpnr.x, y:rhPos.y - wpnr.y}) <= 4
                 if ((wpnr.x >= o.areaStartPos.x * 16 - 8 && wpnr.y >= o.areaStartPos.y * 16 - 8 && wpnr.x <= rhPos.x && wpnr.y <= rhPos.y) || mouseNearResize) {
                     
                     select = true;
@@ -371,11 +341,11 @@ class EditorRenderer extends Engine.ComponentBase {
                 let newSta = false;
                 if (selectedStaticObject == -1 && selectedDynamicObject == -1) {
                     if (Object.keys(dynamicTiles).includes(currentTile)) {
-                        scene.dynamicObjects.push({
+                        scene.dynamicObjects.push(structuredClone({
                             objectId: currentTile,
                             position: {x:Math.round(wp.x / 16), y:Math.round(wp.y / 16)},
                             objectData: structuredClone(dynamicTiles[currentTile]?.objectDataShape) as Record<string, string>
-                        })
+                        }))
                         newDyn = true;
                     } else {
                         scene.staticObjects.push({

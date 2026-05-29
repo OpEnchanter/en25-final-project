@@ -84,6 +84,9 @@ export class ComponentBase {
     onCollisionUpdate(): void {};
     onPhysicsUpdate(data: Array<CollisionData>): void {};
 
+    onNewSceneObject(o: GameObject): void {};
+    onRemoveSceneObject(o: GameObject): void {};
+
     onUpdate(): void {};
     onCollisionEnter(params: CollisionData): void {};
     onCollisionExit(): void {};
@@ -167,17 +170,41 @@ export class BoxCollider extends ComponentBase {
     }
 
     override onInitialized(): void {
+        console.log("INIT")
         this.transform = this.object?.getComponents(Transform)[0] as Transform;
-        this.object?.app.objects.toSpliced(this.object?.app.objects.indexOf(this.object), 1).forEach(o => {
+        if (!this.object) return
+        for (const o of this.object?.app.objects) {
             const oCols = o.getComponents(BoxCollider) as Array<BoxCollider>;
             const transform = o.getComponents(Transform)[0] as Transform;
-            oCols.forEach(col => {
-                if (!col.isTrigger) {
+            for (const col of oCols) {
+                if (!col.isTrigger && col.object !== this.object) {
                     this.colliders.push(col);
                     this.transforms.push(transform);
                 }
-            })
-        });
+            }
+        }
+    }
+
+    override onNewSceneObject(o: GameObject): void {
+        const cols = o.getComponents(BoxCollider) as Array<BoxCollider>;
+        const transform = o.getComponents(Transform)[0] as Transform;
+        for (const col of cols) {
+            this.colliders.push(col);
+            this.transforms.push(transform);
+        }
+    }
+
+    override onRemoveSceneObject(o: GameObject): void {
+        const cols = o.getComponents(BoxCollider) as Array<BoxCollider>;
+        let colsToRemove: Array<number> = [];
+        for (const col of cols) {
+            const idx = this.colliders.indexOf(col);
+            this.transforms.splice(idx, 1);
+            colsToRemove.push(idx)
+        }
+        for (const idx of colsToRemove) {
+            this.colliders.splice(idx, 1)
+        }
     }
 
     override onCollisionUpdate(): void {
@@ -285,7 +312,8 @@ export class Rigidbody extends ComponentBase {
         }
 
         // Interaction
-        for (const params of data) {
+        if (data[0]) {
+            const params = data[0]
 
             let b = {
                 x: Math.abs(params.collisionNormal.y),
@@ -311,7 +339,7 @@ export class Rigidbody extends ComponentBase {
                 this.lastCollisionPosition = this.transform ? this.transform?.position : {x:0, y:0};
 
                 const otherBody = params.object;
-                if (!otherBody) continue
+                if (!otherBody) return;
                 const obRb = otherBody.getComponents(Rigidbody)[0] as Rigidbody
                 if (obRb) {
                     const obDensity = obRb.bodyProps.density;
@@ -439,8 +467,20 @@ export class GameObject {
     }
 
     public onInitialized() {
-        this.Components.forEach(m => {
+        for (const m of this.Components){
             m.onInitialized();
+        }
+    }
+
+    public newSceneObject(o: GameObject) {
+        this.Components.forEach(m => {
+            m.onNewSceneObject(o);
+        })
+    }
+
+    public removeSceneObject(o: GameObject) {
+        this.Components.forEach(m => {
+            m.onRemoveSceneObject(o);
         })
     }
 
@@ -532,7 +572,11 @@ export class App {
     canvas: HTMLCanvasElement;
     public ctx: any;
 
+    private isRunning: boolean = false;
+
     options: ApplicationOptions;
+
+    intervalId: any = null;
 
     public renderingClippingPlane: {
         position: vector,
@@ -564,32 +608,37 @@ export class App {
     }
 
     addObject(obj: GameObject) {
+        if (this.isRunning) this.objects.forEach(o => {o.newSceneObject(obj)})
         this.objects.push(obj);
+        if (this.isRunning) obj.onInitialized();
+    }
+
+    stop() {
+        if (this.intervalId) clearInterval(this.intervalId)
     }
 
     start(targetFramerate: number) {
-        console.log(`[${chalk.blueBright("Info")}] App starting!`)
-        document.addEventListener("DOMContentLoaded", () => {
-            let t = 0;
-            this.objects.forEach(object => {
-                object.onInitialized();
-            });
-            document.body.addEventListener("keydown", (e) => {
-                if (e.key === "g" && e.altKey) {
-                    e.preventDefault();
-                    debugEnabled = !debugEnabled;
-                }
-            })
-            setInterval(() => {
-                const dsf = this.options.downscaleFactor
-                fixScale(this.canvas, dsf ? dsf : 1)
-                this.ctx.fillStyle = "#9fdfff"
-                this.ctx.fillRect(0, 0, this.canvas.clientWidth, this.canvas.clientHeight);
-                for (const object of this.objects) {
-                    object.onUpdate();
-                }
-                t++;
-            }, 1000/targetFramerate)
+        let t = 0;
+        for(const object of this.objects) {
+            object.onInitialized();
+        }
+        document.body.addEventListener("keydown", (e) => {
+            if (e.key === "g" && e.altKey) {
+                e.preventDefault();
+                debugEnabled = !debugEnabled;
+            }
         })
+        console.log(`[${chalk.blueBright("Info")}] App starting!`)
+        this.intervalId = setInterval(() => {
+            const dsf = this.options.downscaleFactor
+            fixScale(this.canvas, dsf ? dsf : 1)
+            this.ctx.fillStyle = "#9fdfff"
+            this.ctx.fillRect(0, 0, this.canvas.clientWidth, this.canvas.clientHeight);
+            for (const object of this.objects) {
+                object.onUpdate();
+            }
+            t++;
+        }, 1000/targetFramerate)
+        this.isRunning = true;
     }
 }

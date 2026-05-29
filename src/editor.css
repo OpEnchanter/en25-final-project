@@ -25,6 +25,26 @@ button {
     display: flex;
     flex-direction: row;
     gap: 12px;
+
+    padding: 4px;
+
+    user-select: none;
+
+    &:hover {
+        cursor: pointer;
+    }
+
+    &:has(input[type="checkbox"]) { 
+        background: #5f1a19;
+    }
+
+    &:has(input[type="checkbox"]:checked) {
+        background: #1f5a19;
+    }
+
+    input[type="checkbox"] {
+        display: none;
+    }
 }
 
 .exportedLevel {
