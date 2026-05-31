@@ -27,10 +27,24 @@ const dynamicObjectFunctions: Record<string, (position: Engine.vector, tileScale
     },
     "text_trigger": (position: Engine.vector, tileScale: number, objectData: any) => {
         return (new Engine.GameObjectBuilder(app)
-            .addComponent(new Engine.Transform({x:tileScale * position.x, y:tileScale * position.y}, 0, {x:16*tileScale, y:8*tileScale}))
+            .addComponent(new Engine.Transform({x:tileScale * position.x, y:tileScale * position.y}, 0, {x:tileScale, y:tileScale}))
             .addComponent(new TextTrigger(textBox as TextBox, playerTransform, objectData.text))
             .build())
-    }
+    },
+    "checkpoint": (position: Engine.vector, tileScale: number, objectData: any) => {
+        return (new Engine.GameObjectBuilder(app)
+            .addComponent(new Engine.Transform({x:tileScale * position.x, y:tileScale * position.y}, 0, {x:tileScale, y:tileScale}))
+            .addComponent(new Engine.Sprite("/src/assets/tiles/flag/1.png"))
+            .addComponent(new Engine.Renderer(app.ctx))
+            .addComponent(new Checkpoint())
+            .build())
+    },
+    "next_level_trigger": (position: Engine.vector, tileScale: number, objectData: any) => {
+        return (new Engine.GameObjectBuilder(app)
+            .addComponent(new Engine.Transform({x:tileScale * position.x, y:tileScale * position.y}, 0, {x:tileScale, y:tileScale}))
+            .addComponent(new NextLevelTrigger())
+            .build())
+    },
 };
 
 type StaticObject = {
@@ -323,6 +337,96 @@ class TextBox extends Engine.ComponentBase {
     }
 }
 
+class Checkpoint extends Engine.ComponentBase {
+    transform: Engine.Transform | null = null;
+    sprite: Engine.Sprite | null = null;
+    playerRb: Engine.Rigidbody | null = null;
+
+    playerSide: number = -1;
+    lastFrameSide: number = -1;
+
+    rotationVelocity: number = 0;
+
+    playerVelocity: number = 0;
+    t: number = 0;
+
+    initialPosition: Engine.vector = {x:0, y:0};
+
+    deg = 0;
+
+    claimedImage: HTMLImageElement = new window.Image();
+
+    override onInitialized(): void {
+        this.transform = this.object?.getComponents(Engine.Transform)[0] as Engine.Transform;
+        this.sprite = this.object?.getComponents(Engine.Sprite)[0] as Engine.Sprite;
+        this.playerRb = player.getComponents(Engine.Rigidbody)[0] as Engine.Rigidbody;
+        this.initialPosition.x = this.transform.position.x;
+        this.initialPosition.y = this.transform.position.y;
+
+        this.claimedImage.src = '/src/assets/tiles/flag/2.png'
+    }
+
+    override onUpdate(): void {
+        if (!this.transform || !this.playerRb || !this.sprite) return
+        this.playerSide = playerTransform.position.x > this.transform?.position.x ? 1 : -1;
+
+        if (this.lastFrameSide !== this.playerSide) {
+            this.t = 1;
+            this.rotationVelocity = this.playerRb.velocity.x * 5
+            this.sprite.texture = this.claimedImage;
+            playerSpawnPosition = playerTransform.position;
+        }
+
+        this.deg += this.rotationVelocity;
+        this.deg = Math.min(Math.max(this.deg, -90), 90)
+        const rad = this.deg * (Math.PI/180)
+        
+        this.transform.rotation = this.deg;
+
+        this.transform.position.x = this.initialPosition.x - Math.cos(rad + Math.PI/2) * 8
+        this.transform.position.y = this.initialPosition.y - Math.sin(rad + Math.PI/2) * 8 + 8
+
+        this.lastFrameSide = this.playerSide;
+        this.rotationVelocity += (0 - this.deg) / 10;
+        this.rotationVelocity *= 0.95
+        console.log(this.rotationVelocity);
+    }
+}
+
+class NextLevelTrigger extends Engine.ComponentBase {
+
+    transform: Engine.Transform | undefined = undefined;
+
+    triggered: boolean = false;
+    triggeredOld: boolean = false;
+    constructor () {
+        super()
+    }
+
+    override onInitialized(): void {
+        this.transform = this.object?.getComponents(Engine.Transform)[0] as Engine.Transform;
+    }
+
+    override onUpdate(): void {
+        if (!this.transform || !playerTransform) return
+        if (this.transform.position.x < playerTransform.position.x) {
+            this.triggered = true;
+        }
+
+        if (this.triggered && !this.triggeredOld) {
+            levelIndex++;
+
+            app.stop();
+            startLevelLoad();
+            app.start(60);
+        }
+
+        this.triggeredOld = this.triggered;
+    }
+}
+
+let levelIndex = 0;
+let playerSpawnPosition = {x:-64, y:-24};
 const tileset: Record<string, Array<Array<string>>> = tiledata.tilesets;
 
 function loadWorldFromJson(world: SerializedWorld, app: Engine.App, tileScale: number) {
@@ -412,19 +516,32 @@ const app = new Engine.App({
 
 function startLevelLoad() {
     app.objects = [];
-    let worldJson = `{"staticObjects":[{"objectId":"null","areaStartPos":{"x":-5,"y":-10},"areaScale":{"x":1,"y":10},"hasCollision":true},{"objectId":"brick_grass","areaStartPos":{"x":-26,"y":0},"areaScale":{"x":50,"y":5},"hasCollision":true},{"objectId":"brick","areaStartPos":{"x":12,"y":-3},"areaScale":{"x":2,"y":1},"hasCollision":true},{"objectId":"brick","areaStartPos":{"x":15,"y":-3},"areaScale":{"x":2,"y":1},"hasCollision":true},{"objectId":"pit","areaStartPos":{"x":24,"y":0},"areaScale":{"x":4,"y":5},"hasCollision":false},{"objectId":"brick_grass","areaStartPos":{"x":28,"y":0},"areaScale":{"x":11,"y":5},"hasCollision":true},{"objectId":"brick","areaStartPos":{"x":30,"y":-1},"areaScale":{"x":3,"y":1},"hasCollision":true},{"objectId":"brick","areaStartPos":{"x":33,"y":-2},"areaScale":{"x":4,"y":2},"hasCollision":true},{"objectId":"brick","areaStartPos":{"x":2,"y":-11},"areaScale":{"x":4,"y":4},"hasCollision":true},{"objectId":"brick","areaStartPos":{"x":7,"y":-11},"areaScale":{"x":4,"y":4},"hasCollision":true},{"objectId":"brick","areaStartPos":{"x":5,"y":-17},"areaScale":{"x":3,"y":7},"hasCollision":true},{"objectId":"brick-dark","areaStartPos":{"x":4,"y":-18},"areaScale":{"x":5,"y":3},"hasCollision":true},{"objectId":"brick","areaStartPos":{"x":6,"y":-18},"areaScale":{"x":1,"y":2},"hasCollision":true}],"dynamicObjects":[{"objectId":"title","position":{"x":-4,"y":-4}},{"objectId":"lucky_block","position":{"x":14,"y":-3}},{"objectId":"lucky_block","position":{"x":14,"y":-6}},{"objectId":"lucky_block","position":{"x":33,"y":-5}},{"objectId":"lucky_block","position":{"x":8,"y":-3}},{"objectId":"lucky_block","position":{"x":7,"y":-3}},{"objectId":"lucky_block","position":{"x":6,"y":-3}}]}`
+    let levels: Array<SerializedWorld> = [
+        {"staticObjects":[{"objectId":"stone_brick_grass","areaStartPos":{"x":-7,"y":0},"areaScale":{"x":21,"y":2},"hasCollision":true},{"objectId":"stone_brick_grass","areaStartPos":{"x":3,"y":-3},"areaScale":{"x":2,"y":3},"hasCollision":true}],"dynamicObjects":[{"objectId":"next_level_trigger","position":{"x":12,"y":-1},"objectData":{}},{"objectId":"text_trigger","position":{"x":-2,"y":-1},"objectData":{"text":"Gotta get to the end!"}}]},
+        {"staticObjects":[{"objectId":"stone_brick_grass","areaStartPos":{"x":-9,"y":0},"areaScale":{"x":11,"y":2},"hasCollision":true}],"dynamicObjects":[{"objectId":"text_trigger","position":{"x":-9,"y":-1},"objectData":{"text":"You did it!"}},{"objectId":"title","position":{"x":-4,"y":-5},"objectData":{}}]}
+    ]
 
     const queryString = window.location.search;
     const urlParams = new URLSearchParams(queryString);
 
-    worldJson = urlParams.get("map") ? urlParams.get("map") as string : worldJson
+    console.log(urlParams.get("map") as string)
+
+    console.log()
+
+
+    if (urlParams.get("map")) {
+        const uriLevelData = JSON.parse(decodeURIComponent(urlParams.get("map") as string))
+        levels = uriLevelData
+    }
+
+    const worldJson = levels[levelIndex]
 
     document.title = urlParams.get("map") ? "Custom Map" : "Campaign"
 
     player = new Engine.GameObjectBuilder(app)
         .addComponent(new Engine.Sprite("/src/assets/mario.png"))
         .addComponent(new Engine.Renderer(app.ctx))
-        .addComponent(new Engine.Transform({x:-64, y:-24}, 0, {x:12, y:16}))
+        .addComponent(new Engine.Transform(playerSpawnPosition, 0, {x:12, y:16}))
         .addComponent(new Engine.BoxCollider({x: 12, y: 15}, {x:0, y:1}, false))
         .addComponent(new PlayerAnimator())
         .addComponent(new Engine.Rigidbody({
@@ -445,7 +562,7 @@ function startLevelLoad() {
 
     textBox = textBoxObject.getComponents(TextBox)[0] as TextBox;
 
-    loadWorldFromJson(JSON.parse(worldJson) as SerializedWorld, app, 16)
+    loadWorldFromJson(worldJson as SerializedWorld, app, 16)
 
     app.addObject(new Engine.GameObjectBuilder(app)
         .addComponent(new Engine.Transform({x:-64, y:-512}, 0, {x:0, y:0}))

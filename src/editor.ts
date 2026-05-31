@@ -525,7 +525,7 @@ document.getElementById("playtestButton")?.addEventListener("click", (e) => {
     console.log("Playtesting")
     const exportedTextArea = document.getElementById("export");
     if (!exportedTextArea) return;
-    window.open(`/?map=${JSON.stringify(scene)}`)
+    window.open(`/?map=${encodeURIComponent(JSON.stringify([scene]))}`)
 })
 
 let menuOpen = false;

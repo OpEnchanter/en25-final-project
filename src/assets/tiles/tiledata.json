@@ -40,7 +40,9 @@
         "dynamic": {
             "lucky_block": {"spriteName":"lucky", "scale":{"x":16, "y":16}, "objectDataShape":{"contents":""}},
             "title": {"spriteName":"title", "scale":{"x":256, "y":128}, "objectDataShape":{}},
-            "text_trigger": {"spriteName":"text-trigger", "scale":{"x":16, "y":16}, "objectDataShape":{"text":""}}
+            "text_trigger": {"spriteName":"text-trigger", "scale":{"x":16, "y":16}, "objectDataShape":{"text":""}},
+            "checkpoint": {"spriteName":"flag/1", "scale":{"x":16, "y":16}, "objectDataShape":{}},
+            "next_level_trigger": {"spriteName":"next-level-trigger", "scale":{"x":16, "y":16}, "objectDataShape":{}}
         }
     },
     "translation": {
@@ -65,10 +67,13 @@
 
         "lucky_block": "Lucky Block",
         "title": "Title",
-        "text_trigger": "Text Trigger"
+        "text_trigger": "Text Trigger",
+        "checkpoint": "Checkpoint",
+        "next_level_trigger": "Next Level Trigger"
     },
     "editor_textures": {
         "null": "editor/null",
-        "text-trigger": "editor/text-trigger"
+        "text-trigger": "editor/text-trigger",
+        "next-level-trigger": "editor/next-level-trigger"
     }
 }
