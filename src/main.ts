@@ -266,7 +266,7 @@ function startLevelLoad() {
         .addComponent(new Engine.Sprite("/src/assets/mario.png"))
         .addComponent(new Engine.Renderer(app.ctx))
         .addComponent(new Engine.Transform({x:-64, y:-24}, 0, {x:12, y:16}))
-        .addComponent(new Engine.BoxCollider({x: 12, y: 16}, {x:0, y:0}, false))
+        .addComponent(new Engine.BoxCollider({x: 12, y: 15}, {x:0, y:1}, false))
         .addComponent(new PlayerAnimator())
         .addComponent(new Engine.Rigidbody({
             bounciness: 0,

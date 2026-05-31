@@ -35,7 +35,7 @@ const dynamicTiles: Record<string, {spriteName:string, scale: Engine.vector, obj
 
 const tileSets: Array<string> = Object.keys(tileset);
 
-let currentTile = "brick";
+let currentTile = "brick/brick";
 
 const tilePicker = document.getElementById("tileList");
 const tilesetPicker = document.getElementById("tilesetList");
@@ -48,10 +48,12 @@ for (const t of tiles) {
         const radio = document.createElement("input");
         radio.type = "radio";
         radio.name = "tiles";
+        radio.checked = (t == currentTile)
         radio.value = t;
 
         const img = document.createElement("img");
-        img.src = `/src/assets/tiles/${t}.png`;
+        let imsrc = Object.keys(tiledata.editor_textures).includes(t) ? `/src/assets/tiles/${tiledata.editor_textures?.[t as string]}.png` :`/src/assets/tiles/${t}.png`
+        img.src = imsrc;
         img.width = 16;
         img.height = 16;
 
@@ -122,7 +124,8 @@ for (const o of Object.keys(dynamicTiles)) {
         radio.value = o;
 
         const img = document.createElement("img");
-        img.src = `/src/assets/tiles/${dynamicTiles[o]?.spriteName}.png`;
+        let imsrc = Object.keys(tiledata.editor_textures).includes(dynamicTiles[o]?.spriteName) ? `/src/assets/tiles/${tiledata.editor_textures[dynamicTiles[o]?.spriteName]}.png` :`/src/assets/tiles/${dynamicTiles[o]?.spriteName}.png`
+        img.src = imsrc;
         img.width = 16;
         img.height = 16;
 
@@ -149,7 +152,8 @@ tileImageCache["editor-null"].src = "/src/assets/tiles/editor-null.png"
 
 for (const tile of tiles) {
     tileImageCache[tile] = new window.Image();
-    tileImageCache[tile].src = `/src/assets/tiles/${tile}.png`
+    let imsrc = Object.keys(tiledata.editor_textures).includes(tile) ? `/src/assets/tiles/${tiledata.editor_textures?.[tile as string]}.png` :`/src/assets/tiles/${tile}.png`
+    tileImageCache[tile].src = imsrc;
 }
 
 for (const set of Object.keys(tileset)) {
@@ -165,7 +169,8 @@ for (const set of Object.keys(tileset)) {
 
 for (const obj of Object.keys(dynamicTiles)) {
     tileImageCache[obj] = new window.Image();
-    tileImageCache[obj].src = `/src/assets/tiles/${dynamicTiles[obj]?.spriteName}.png`
+    let imsrc = Object.keys(tiledata.editor_textures).includes(dynamicTiles[obj]?.spriteName) ? `/src/assets/tiles/${tiledata.editor_textures[dynamicTiles[obj]?.spriteName]}.png` :`/src/assets/tiles/${dynamicTiles[obj]?.spriteName}.png`
+    tileImageCache[obj].src = imsrc;
 }
 
 class CameraController extends Engine.ComponentBase {
@@ -266,10 +271,11 @@ class EditorRenderer extends Engine.ComponentBase {
 
                     collisionEnabledCheckbox.addEventListener("change", (e) => {
                         o.hasCollision = e?.target?.checked;
+                        collisionEnabledText.innerText = e?.target?.checked ? "Collision Enabled" : "Collision Disabled"
                     })
 
                     const collisionEnabledText = document.createElement("span");
-                    collisionEnabledText.innerText = "Collision Enabled"
+                    collisionEnabledText.innerText = o.hasCollision ? "Collision Enabled" : "Collision Disabled"
 
                     collisionEnabledContainer.appendChild(collisionEnabledText);
                     collisionEnabledContainer.appendChild(collisionEnabledCheckbox);
@@ -470,7 +476,6 @@ class EditorRenderer extends Engine.ComponentBase {
                         }
                     }
 
-                    sprite = object.objectId == "null" ? tileImageCache["editor-null"] : sprite
                     if (sprite)
                     Engine.draw(ctx, sprite, 0, {x:object.areaStartPos.x*16+(x*16)-app.renderingClippingPlane.position.x, y:object.areaStartPos.y*16+(y*16)-app.renderingClippingPlane.position.y}, {x:16, y:16})
                 }

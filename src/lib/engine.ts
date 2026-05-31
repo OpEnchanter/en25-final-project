@@ -66,13 +66,17 @@ export function draw(ctx: any, image: HTMLImageElement | HTMLCanvasElement, rota
     ctx.rotate((Math.PI / 180) * rotation);
     ctx.scale(xscalar, 1)
     ctx.translate(-1*(position.x), -1*(position.y));
-
-    ctx.drawImage(image, position.x-(scale.x/2), position.y-(scale.y/2), scale.x, scale.y);
+    try {
+        ctx.drawImage(image, position.x-(scale.x/2), position.y-(scale.y/2), scale.x, scale.y);
+    } catch {
+        console.log(`[${chalk.yellow("Warn")}] Texture '${image.src}' failed to render.`)
+        return;
+    }
 
     ctx.translate(position.x, position.y);
-    ctx.rotate((Math.PI / 180) * -rotation);
-    ctx.scale(xscalar, 1)
-    ctx.translate(-1*(position.x), -1*(position.y));
+        ctx.rotate((Math.PI / 180) * -rotation);
+        ctx.scale(xscalar, 1)
+        ctx.translate(-1*(position.x), -1*(position.y));
 }
 
 export class ComponentBase {
