@@ -3,6 +3,10 @@ import chalk from "chalk";
 
 import tiledata from "./assets/tiles/tiledata.json"
 
+let textBox: TextBox | undefined = undefined;
+let player: Engine.GameObject;
+let playerTransform: Engine.Transform;
+
 const dynamicObjectFunctions: Record<string, (position: Engine.vector, tileScale: number, objectData: any)=>Engine.GameObject> = {
     "lucky_block": (position: Engine.vector, tileScale: number, objectData: any)=>{
         return (new Engine.GameObjectBuilder(app)
@@ -21,6 +25,12 @@ const dynamicObjectFunctions: Record<string, (position: Engine.vector, tileScale
             .addComponent(new Engine.Renderer(app.ctx))
             .build())
     },
+    "text_trigger": (position: Engine.vector, tileScale: number, objectData: any) => {
+        return (new Engine.GameObjectBuilder(app)
+            .addComponent(new Engine.Transform({x:tileScale * position.x, y:tileScale * position.y}, 0, {x:16*tileScale, y:8*tileScale}))
+            .addComponent(new TextTrigger(textBox as TextBox, playerTransform, objectData.text))
+            .build())
+    }
 };
 
 type StaticObject = {
@@ -87,7 +97,7 @@ class PlayerAnimator extends Engine.ComponentBase {
 
     override onLateUpdate(): void {
         if (!this.sprite || !this.rigidbody || !this.transform) return
-        if (Math.abs(this.rigidbody.velocity.x) > 0.5) {
+        if (Math.abs(this.rigidbody.velocity.x) > 0.2) {
             this.sprite.texture = this.runAnimation[(Math.floor(this.idx) % this.runAnimation.length)];
             this.idx += Math.abs(this.rigidbody.velocity.x / 20);
             if (this.rigidbody.velocity.x < 0.1) {
@@ -141,6 +151,174 @@ class LuckyBlock extends Engine.ComponentBase {
             this.triggered = true
             this.sprite.texture.src = "/src/assets/tiles/lucky-consumed.png"
             app.addObject(dynamicObjectFunctions[this.contents]({x:this.transform.position.x / 16, y:this.transform.position.y / 16 - 1}, 16, {contents:""}));
+        }
+    }
+}
+
+class PlayerHeathController extends Engine.ComponentBase {
+    transform: Engine.Transform | null = null;
+
+    override onInitialized(): void {
+        this.transform = this.object?.getComponents(Engine.Transform)[0] as Engine.Transform;
+    }
+
+    override onUpdate(): void {
+        if (!this.transform) return
+        if (this.transform.position.y > 96) {
+            app.stop();
+            startLevelLoad();
+            app.start(60);
+        }
+    }
+}
+
+function drawWrappedText(ctx: any, text: string, x: number, y: number, maxWidth: number, lineHeight: number) {
+    const words = text.split(" ");
+    let currentLine = "";
+
+    for (let i = 0; i < words.length; i++) {
+        let testLine = currentLine + words[i] + " ";
+        let metrics = ctx.measureText(testLine);
+        let testWidth = metrics.width;
+        if (testWidth > maxWidth && i > 0) {
+            ctx.fillText(currentLine, x, y);
+            currentLine = words[i] + " ";
+            y += lineHeight;          
+        } else {
+            currentLine = testLine;
+        }
+    }
+    
+    ctx.fillText(currentLine, x, y);
+}
+
+class TextTrigger extends Engine.ComponentBase {
+    textBox: TextBox;
+    tracked: Engine.Transform;
+
+    transform: Engine.Transform | undefined = undefined;
+
+    triggered: boolean = false;
+    triggeredOld: boolean = false;
+
+    text: string;
+    constructor (textBox: TextBox, trackedTransform: Engine.Transform, text: string) {
+        super()
+        this.textBox = textBox;
+        this.tracked = trackedTransform;
+        this.text = text;
+    }
+
+    override onInitialized(): void {
+        this.transform = this.object?.getComponents(Engine.Transform)[0] as Engine.Transform;
+    }
+
+    override onUpdate(): void {
+        if (!this.transform || !this.tracked) return
+        if (this.transform.position.x < this.tracked.position.x) {
+            this.triggered = true;
+        }
+
+        if (this.triggered && !this.triggeredOld) {
+            this.textBox.setPages(this.text.split("\\"))
+        }
+
+        this.triggeredOld = this.triggered;
+    }
+}
+
+class TextBox extends Engine.ComponentBase {
+    textures: Array<Array<HTMLImageElement>> = [];
+    advanceButton: HTMLImageElement | undefined = undefined;
+    private pages: Array<String> = [];
+
+    private t = 0;
+    private pageIdx = 0;
+
+    writeSpeed = 1.5;
+
+    private nbty = -32;
+    private nby = -32;
+
+    private spacePressed = false;
+
+    public setPages(pages: Array<string>) {
+        this.pages = pages;
+        this.pageIdx = 0;
+    }
+
+    private getTexture(name: string) {
+        const img = new window.Image();
+        img.src = `/src/assets/tiles/textbox/${name}.png`;
+        return img;
+    }
+
+    override onInitialized(): void {
+        this.advanceButton = this.getTexture("textbox-advance");
+        this.textures = [
+            [this.getTexture("textbox-top-left"), this.getTexture("textbox-top"), this.getTexture("textbox-top-right")],
+            [this.getTexture("textbox-left"), this.getTexture("textbox-center"), this.getTexture("textbox-right")],
+            [this.getTexture("textbox-bottom-left"), this.getTexture("textbox-bottom"), this.getTexture("textbox-bottom-right")]
+        ]
+
+        document.body.addEventListener("keydown", (e) => {
+            if (e.key === " ") {
+                this.spacePressed = true;
+            }
+        })
+
+        document.body.addEventListener("keyup", (e) => {
+            if (e.key === " ") {
+                this.spacePressed = false;
+            }
+        })
+    }
+
+    override onUpdate(): void {
+        // Top row
+        const xpad = 32;
+        const ypad = 16;
+        const cwid = app.viewportScale.x - (xpad+8)*2;
+        const chi = 16
+
+        if (this.pages.length !== 0) {
+            const splicedText = this.pages?.[this.pageIdx].slice(0, Math.round(this.t/this.writeSpeed));
+
+            if (splicedText.length === this.pages[this.pageIdx]?.length && this.spacePressed) {
+                if (this.pageIdx < this.pages.length - 1) {
+                    this.pageIdx++;
+                    this.t = 0;
+                } else {
+                    this.pages = [];
+                }
+            }
+
+            this.nbty = splicedText.length === this.pages[this.pageIdx]?.length ? 0 : -32
+
+            this.nby += (this.nbty - this.nby) / 4
+
+            if (this.advanceButton) Engine.draw(app.ctx, this.advanceButton, 0, {x:xpad+cwid-24, y: ypad+32+chi+this.nby}, {x:64, y:16})
+            Engine.draw(app.ctx, this.textures?.[0]?.[0] as HTMLImageElement, 0, {x:xpad, y:ypad}, {x:16, y:16});
+            Engine.draw(app.ctx, this.textures?.[0]?.[1] as HTMLImageElement, 0, {x:xpad+8+cwid/2, y:ypad}, {x:cwid, y:16});
+            Engine.draw(app.ctx, this.textures?.[0]?.[2] as HTMLImageElement, 0, {x:xpad+cwid+16, y:ypad}, {x:16, y:16});
+
+
+            Engine.draw(app.ctx, this.textures?.[1]?.[0] as HTMLImageElement, 0, {x:xpad, y:ypad+8+chi/2}, {x:16, y:chi});
+            Engine.draw(app.ctx, this.textures?.[1]?.[1] as HTMLImageElement, 0, {x:xpad+8+cwid/2, y:ypad+8+chi/2}, {x:cwid, y:chi});
+            Engine.draw(app.ctx, this.textures?.[1]?.[2] as HTMLImageElement, 0, {x:xpad+cwid+16, y:ypad+8+chi/2}, {x:16, y:chi});
+
+            Engine.draw(app.ctx, this.textures?.[2]?.[0] as HTMLImageElement, 0, {x:xpad, y:ypad+16+chi}, {x:16, y:16});
+            Engine.draw(app.ctx, this.textures?.[2]?.[1] as HTMLImageElement, 0, {x:xpad+8+cwid/2, y:ypad+16+chi}, {x:cwid, y:16});
+            Engine.draw(app.ctx, this.textures?.[2]?.[2] as HTMLImageElement, 0, {x:xpad+cwid+16, y:ypad+16+chi}, {x:16, y:16});
+
+
+            // Draw text
+            app.ctx.font = "6px 'PressStart2P'"
+            app.ctx.fillStyle = "black"
+
+            drawWrappedText(app.ctx, splicedText, xpad+8, ypad+8, cwid, 8)
+
+            this.t++;
         }
     }
 }
@@ -214,23 +392,6 @@ function loadWorldFromJson(world: SerializedWorld, app: Engine.App, tileScale: n
     }
 }
 
-class PlayerHeathController extends Engine.ComponentBase {
-    transform: Engine.Transform | null = null;
-
-    override onInitialized(): void {
-        this.transform = this.object?.getComponents(Engine.Transform)[0] as Engine.Transform;
-    }
-
-    override onUpdate(): void {
-        if (!this.transform) return
-        if (this.transform.position.y > 96) {
-            app.stop();
-            startLevelLoad();
-            app.start(60);
-        }
-    }
-}
-
 console.log(chalk.black(`
 ┌-------------------------------------------------------┐
 |                    ${chalk.bold("Super Mr. Bennet")}                   |
@@ -260,9 +421,7 @@ function startLevelLoad() {
 
     document.title = urlParams.get("map") ? "Custom Map" : "Campaign"
 
-    loadWorldFromJson(JSON.parse(worldJson) as SerializedWorld, app, 16)
-
-    const player = new Engine.GameObjectBuilder(app)
+    player = new Engine.GameObjectBuilder(app)
         .addComponent(new Engine.Sprite("/src/assets/mario.png"))
         .addComponent(new Engine.Renderer(app.ctx))
         .addComponent(new Engine.Transform({x:-64, y:-24}, 0, {x:12, y:16}))
@@ -278,13 +437,25 @@ function startLevelLoad() {
         .addComponent(new PlayerHeathController())
         .build()
 
+    playerTransform = player.getComponents(Engine.Transform)[0] as Engine.Transform;
+
+    const textBoxObject = new Engine.GameObjectBuilder(app)
+        .addComponent(new TextBox())
+        .build();
+
+    textBox = textBoxObject.getComponents(TextBox)[0] as TextBox;
+
+    loadWorldFromJson(JSON.parse(worldJson) as SerializedWorld, app, 16)
+
     app.addObject(new Engine.GameObjectBuilder(app)
         .addComponent(new Engine.Transform({x:-64, y:-512}, 0, {x:0, y:0}))
         .addComponent(new Engine.Camera())
-        .addComponent(new CameraController(player.getComponents(Engine.Transform)[0] as Engine.Transform))
+        .addComponent(new CameraController(playerTransform))
         .build())
 
     app.addObject(player)
+
+    app.addObject(textBoxObject);
 }
 
 startLevelLoad();

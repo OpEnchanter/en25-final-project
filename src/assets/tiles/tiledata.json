@@ -40,7 +40,7 @@
         "dynamic": {
             "lucky_block": {"spriteName":"lucky", "scale":{"x":16, "y":16}, "objectDataShape":{"contents":""}},
             "title": {"spriteName":"title", "scale":{"x":256, "y":128}, "objectDataShape":{}},
-            "text-trigger": {"spriteName":"text-trigger", "scale":{"x":16, "y":16}, "objectDataShape":{"text":""}}
+            "text_trigger": {"spriteName":"text-trigger", "scale":{"x":16, "y":16}, "objectDataShape":{"text":""}}
         }
     },
     "translation": {
@@ -65,7 +65,7 @@
 
         "lucky_block": "Lucky Block",
         "title": "Title",
-        "text-trigger": "Text Trigger"
+        "text_trigger": "Text Trigger"
     },
     "editor_textures": {
         "null": "editor/null",

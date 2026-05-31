@@ -192,6 +192,10 @@ class CameraController extends Engine.ComponentBase {
     override onUpdate(): void {
         const mSpeed = this.alt ? 5 : 3
         if (this.transform) {
+            const activeEl = document.activeElement;
+            const tagName = activeEl?.tagName.toLowerCase();
+            const type = activeEl?.type ? activeEl.type.toLowerCase() : null;
+            if (tagName == "input" && type == "text") return;
             if (this.keys["w"]) {
                 this.transform.position.y -= mSpeed
             } else if (this.keys["s"]) {
@@ -221,6 +225,10 @@ class EditorRenderer extends Engine.ComponentBase {
     override onInitialized(): void {
         document.addEventListener("keydown", (e) => {
             if (e.key === "Backspace") {
+                const activeEl = document.activeElement;
+                const tagName = activeEl?.tagName.toLowerCase();
+                const type = activeEl?.type ? activeEl.type.toLowerCase() : null;
+                if (tagName == "input" && type == "text") return
                 if (selectedStaticObject != -1) {
                     scene.staticObjects.splice(selectedStaticObject, 1);
                     selectedStaticObject = -1;
