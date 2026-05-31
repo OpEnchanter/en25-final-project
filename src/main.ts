@@ -313,7 +313,7 @@ class TextBox extends Engine.ComponentBase {
 
 
             // Draw text
-            app.ctx.font = "6px 'PressStart2P'"
+            app.ctx.font = "7px 'PressStart2P'"
             app.ctx.fillStyle = "black"
 
             drawWrappedText(app.ctx, splicedText, xpad+8, ypad+8, cwid, 8)
