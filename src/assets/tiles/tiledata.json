@@ -38,6 +38,7 @@
             "stone-bricks/stone-bricks-dark-half"
         ],
         "dynamic": {
+            "sign": {"spriteName":"props/sign", "scale":{"x":16, "y":16}, "objectDataShape":{}},
             "lucky_block": {"spriteName":"lucky", "scale":{"x":16, "y":16}, "objectDataShape":{"contents":""}},
             "title": {"spriteName":"title", "scale":{"x":256, "y":128}, "objectDataShape":{}},
             "text_trigger": {"spriteName":"text-trigger", "scale":{"x":16, "y":16}, "objectDataShape":{"text":""}},
@@ -69,7 +70,8 @@
         "title": "Title",
         "text_trigger": "Text Trigger",
         "checkpoint": "Checkpoint",
-        "next_level_trigger": "Next Level Trigger"
+        "next_level_trigger": "Next Level Trigger",
+        "sign": "Sign"
     },
     "editor_textures": {
         "null": "editor/null",

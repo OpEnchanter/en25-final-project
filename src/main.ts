@@ -8,6 +8,13 @@ let player: Engine.GameObject;
 let playerTransform: Engine.Transform;
 
 const dynamicObjectFunctions: Record<string, (position: Engine.vector, tileScale: number, objectData: any)=>Engine.GameObject> = {
+    "sign": (position: Engine.vector, tileScale: number, objectData: any)=>{
+        return (new Engine.GameObjectBuilder(app)
+            .addComponent(new Engine.Transform({x:tileScale * position.x, y:tileScale * position.y}, 0, {x:tileScale, y:tileScale}))
+            .addComponent(new Engine.Sprite("/src/assets/tiles/props/sign.png"))
+            .addComponent(new Engine.Renderer(app.ctx))
+            .build())
+    },
     "lucky_block": (position: Engine.vector, tileScale: number, objectData: any)=>{
         return (new Engine.GameObjectBuilder(app)
             .addComponent(new Engine.Transform({x:tileScale * position.x, y:tileScale * position.y}, 0, {x:tileScale, y:tileScale}))
