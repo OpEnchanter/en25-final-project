@@ -39,6 +39,8 @@
         ],
         "dynamic": {
             "sign": {"spriteName":"props/sign", "scale":{"x":16, "y":16}, "objectDataShape":{}},
+            "flower_red": {"spriteName":"props/flower-red", "scale":{"x":16, "y":16}, "objectDataShape":{}},
+            "flower_blue": {"spriteName":"props/flower-blue", "scale":{"x":16, "y":16}, "objectDataShape":{}},
             "lucky_block": {"spriteName":"lucky", "scale":{"x":16, "y":16}, "objectDataShape":{"contents":""}},
             "title": {"spriteName":"title", "scale":{"x":256, "y":128}, "objectDataShape":{}},
             "text_trigger": {"spriteName":"text-trigger", "scale":{"x":16, "y":16}, "objectDataShape":{"text":""}},
@@ -71,7 +73,9 @@
         "text_trigger": "Text Trigger",
         "checkpoint": "Checkpoint",
         "next_level_trigger": "Next Level Trigger",
-        "sign": "Sign"
+        "sign": "Sign",
+        "flower_red": "Red Flower",
+        "flower_blue": "Blue Flower"
     },
     "editor_textures": {
         "null": "editor/null",

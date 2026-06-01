@@ -15,6 +15,20 @@ const dynamicObjectFunctions: Record<string, (position: Engine.vector, tileScale
             .addComponent(new Engine.Renderer(app.ctx))
             .build())
     },
+    "flower_red": (position: Engine.vector, tileScale: number, objectData: any)=>{
+        return (new Engine.GameObjectBuilder(app)
+            .addComponent(new Engine.Transform({x:tileScale * position.x, y:tileScale * position.y}, 0, {x:tileScale, y:tileScale}))
+            .addComponent(new Engine.Sprite("/src/assets/tiles/props/flower-red.png"))
+            .addComponent(new Engine.Renderer(app.ctx))
+            .build())
+    },
+    "flower_blue": (position: Engine.vector, tileScale: number, objectData: any)=>{
+        return (new Engine.GameObjectBuilder(app)
+            .addComponent(new Engine.Transform({x:tileScale * position.x, y:tileScale * position.y}, 0, {x:tileScale, y:tileScale}))
+            .addComponent(new Engine.Sprite("/src/assets/tiles/props/flower-blue.png"))
+            .addComponent(new Engine.Renderer(app.ctx))
+            .build())
+    },
     "lucky_block": (position: Engine.vector, tileScale: number, objectData: any)=>{
         return (new Engine.GameObjectBuilder(app)
             .addComponent(new Engine.Transform({x:tileScale * position.x, y:tileScale * position.y}, 0, {x:tileScale, y:tileScale}))
@@ -379,7 +393,7 @@ class Checkpoint extends Engine.ComponentBase {
 
         if (this.lastFrameSide !== this.playerSide) {
             this.t = 1;
-            let ydist = Math.max(Math.sqrt(this.transform.position.y - playerTransform.position.y), 1);
+            let ydist = Math.max(Math.abs(this.transform.position.y - playerTransform.position.y), 1);
             this.rotationVelocity = this.playerRb.velocity.x * 5 / ydist;
             this.sprite.texture = this.claimedImage;
             playerSpawnPosition = this.transform.position;
