@@ -428,25 +428,6 @@ class EditorRenderer extends Engine.ComponentBase {
         }
 
         // Render Objects
-        for (const object of scene.dynamicObjects) {
-            const tile = dynamicTiles[object.objectId]
-            if (!tile) continue
-            const sprite = tileImageCache[object.objectId]
-            if (!sprite) continue
-            Engine.draw(ctx, sprite, 0, 
-                {x:object.position.x * 16 - app.renderingClippingPlane.position.x, y: object.position.y * 16 - app.renderingClippingPlane.position.y}, 
-                {x:tile.scale.x, y:tile.scale.y})
-            if (scene.dynamicObjects.indexOf(object) == selectedDynamicObject) {
-                const tile = dynamicTiles[object.objectId];
-                if (!tile) continue
-                ctx.strokeStyle = "#ffcf8f"
-                ctx.strokeRect(
-                    object.position.x * 16 - app.renderingClippingPlane.position.x - tile.scale.x / 2,
-                    object.position.y * 16 - app.renderingClippingPlane.position.y - tile.scale.y / 2,
-                    tile.scale.x, tile.scale.y)
-            }
-        }
-
         for (const object of scene.staticObjects) {
             const isTileset = Object.keys(tileset).includes(object.objectId) ? true : false;
             let sprite = isTileset ? null : tileImageCache[object.objectId];
@@ -499,6 +480,25 @@ class EditorRenderer extends Engine.ComponentBase {
                 ctx.beginPath();
                 ctx.arc(object.areaStartPos.x * 16 - 8 + (object.areaScale.x * 16) - app.renderingClippingPlane.position.x, object.areaStartPos.y * 16 - 8 + (object.areaScale.y * 16) - app.renderingClippingPlane.position.y, 4, 0, 2*Math.PI)
                 ctx.fill()
+            }
+        }
+
+        for (const object of scene.dynamicObjects) {
+            const tile = dynamicTiles[object.objectId]
+            if (!tile) continue
+            const sprite = tileImageCache[object.objectId]
+            if (!sprite) continue
+            Engine.draw(ctx, sprite, 0, 
+                {x:object.position.x * 16 - app.renderingClippingPlane.position.x, y: object.position.y * 16 - app.renderingClippingPlane.position.y}, 
+                {x:tile.scale.x, y:tile.scale.y})
+            if (scene.dynamicObjects.indexOf(object) == selectedDynamicObject) {
+                const tile = dynamicTiles[object.objectId];
+                if (!tile) continue
+                ctx.strokeStyle = "#ffcf8f"
+                ctx.strokeRect(
+                    object.position.x * 16 - app.renderingClippingPlane.position.x - tile.scale.x / 2,
+                    object.position.y * 16 - app.renderingClippingPlane.position.y - tile.scale.y / 2,
+                    tile.scale.x, tile.scale.y)
             }
         }
 

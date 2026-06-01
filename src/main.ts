@@ -66,6 +66,15 @@ const dynamicObjectFunctions: Record<string, (position: Engine.vector, tileScale
             .addComponent(new NextLevelTrigger())
             .build())
     },
+    "moving_platform": (position: Engine.vector, tileScale: number, objectData: any)=>{
+        return (new Engine.GameObjectBuilder(app)
+            .addComponent(new Engine.Transform({x:tileScale * position.x, y:tileScale * position.y}, 0, {x:3*tileScale, y:tileScale}))
+            .addComponent(new Engine.Sprite("/src/assets/tiles/moving-platform.png"))
+            .addComponent(new Engine.Renderer(app.ctx))
+            .addComponent(new Engine.BoxCollider({x: 48, y: 16}, {x:0, y:0}, false))
+            .addComponent(new MovingPlatform(objectData.x_translation, objectData.y_translation, objectData.speed))
+            .build())
+    }
 };
 
 type StaticObject = {
@@ -363,8 +372,8 @@ class Checkpoint extends Engine.ComponentBase {
     sprite: Engine.Sprite | null = null;
     playerRb: Engine.Rigidbody | null = null;
 
-    playerSide: number = -1;
-    lastFrameSide: number = -1;
+    playerSide: number = 0;
+    lastFrameSide: number = 0;
 
     rotationVelocity: number = 0;
 
@@ -391,7 +400,7 @@ class Checkpoint extends Engine.ComponentBase {
         if (!this.transform || !this.playerRb || !this.sprite) return
         this.playerSide = playerTransform.position.x > this.transform?.position.x ? 1 : -1;
 
-        if (this.lastFrameSide !== this.playerSide) {
+        if (this.lastFrameSide !== this.playerSide && this.lastFrameSide !== 0) {
             this.t = 1;
             let ydist = Math.max(Math.abs(this.transform.position.y - playerTransform.position.y), 1);
             this.rotationVelocity = this.playerRb.velocity.x * 5 / ydist;
@@ -446,6 +455,33 @@ class NextLevelTrigger extends Engine.ComponentBase {
         }
 
         this.triggeredOld = this.triggered;
+    }
+}
+
+class MovingPlatform extends Engine.ComponentBase {
+    translation: Engine.vector
+    startPos: Engine.vector = {x:0, y:0}
+    transform: Engine.Transform | undefined = undefined;
+    speed: number = 1
+
+    t: number = 0;
+
+    constructor (xt: string, yt: string, speed: string) {
+        super()
+        this.translation = {x:parseInt(xt)*8, y:parseInt(yt)*-8}
+        this.speed = parseFloat(speed);
+    }
+
+    override onInitialized(): void {
+        this.transform = this.object?.getComponents(Engine.Transform)[0] as Engine.Transform;
+        this.startPos = structuredClone(this.transform.position);
+    }
+
+    override onUpdate(): void {
+        if (!this.transform) return;
+        this.transform.position.x = (this.startPos.x + this.translation.x) + ( Math.sin( (this.t + Math.PI*8) * (1/16 * this.speed) ) ) * this.translation.x
+        this.transform.position.y = (this.startPos.y + this.translation.y) + ( Math.sin( (this.t + Math.PI*8) * (1/16 * this.speed) ) ) * this.translation.y
+        this.t += 1;
     }
 }
 

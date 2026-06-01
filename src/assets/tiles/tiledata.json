@@ -45,7 +45,8 @@
             "title": {"spriteName":"title", "scale":{"x":256, "y":128}, "objectDataShape":{}},
             "text_trigger": {"spriteName":"text-trigger", "scale":{"x":16, "y":16}, "objectDataShape":{"text":""}},
             "checkpoint": {"spriteName":"flag/1", "scale":{"x":16, "y":16}, "objectDataShape":{}},
-            "next_level_trigger": {"spriteName":"next-level-trigger", "scale":{"x":16, "y":16}, "objectDataShape":{}}
+            "next_level_trigger": {"spriteName":"next-level-trigger", "scale":{"x":16, "y":16}, "objectDataShape":{}},
+            "moving_platform": {"spriteName":"moving-platform", "scale":{"x":48, "y":16}, "objectDataShape":{"x_translation":0, "y_translation":0, "speed":1}}
         }
     },
     "translation": {
@@ -66,7 +67,8 @@
         "brick_grass": "Grass Bricks",
         "brick_pit": "Brick Pit",
         "stone_brick_grass": "Stone Bricks Grass",
-        "stone_brick_pit": "Stone Brick Pit",   
+        "stone_brick_pit": "Stone Brick Pit",
+        "moving_platform": "Moving Platform",
 
         "lucky_block": "Lucky Block",
         "title": "Title",
