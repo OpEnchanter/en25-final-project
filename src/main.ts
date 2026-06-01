@@ -179,9 +179,9 @@ class PlayerHeathController extends Engine.ComponentBase {
     override onUpdate(): void {
         if (!this.transform) return
         if (this.transform.position.y > 96) {
-            app.stop();
-            startLevelLoad();
-            app.start(60);
+            playerTransform.position.x = playerSpawnPosition.x;
+            playerTransform.position.y = playerSpawnPosition.y - 1;
+            (player.getComponents(Engine.Rigidbody)[0] as Engine.Rigidbody).velocity = {x:0, y:-2}
         }
     }
 }
@@ -372,9 +372,10 @@ class Checkpoint extends Engine.ComponentBase {
 
         if (this.lastFrameSide !== this.playerSide) {
             this.t = 1;
-            this.rotationVelocity = this.playerRb.velocity.x * 5
+            let ydist = Math.max(Math.sqrt(this.transform.position.y - playerTransform.position.y), 1);
+            this.rotationVelocity = this.playerRb.velocity.x * 5 / ydist;
             this.sprite.texture = this.claimedImage;
-            playerSpawnPosition = playerTransform.position;
+            playerSpawnPosition = this.transform.position;
         }
 
         this.deg += this.rotationVelocity;
@@ -415,6 +416,8 @@ class NextLevelTrigger extends Engine.ComponentBase {
 
         if (this.triggered && !this.triggeredOld) {
             levelIndex++;
+
+            playerSpawnPosition = {x:-64, y:-24};
 
             app.stop();
             startLevelLoad();
@@ -546,8 +549,8 @@ function startLevelLoad() {
         .addComponent(new PlayerAnimator())
         .addComponent(new Engine.Rigidbody({
             bounciness: 0,
-            friction: 0.98,
-            drag: 0.983141592653589,
+            friction: 0.975,
+            drag: 0.98,
             density: 1
         }))
         .addComponent(new Engine.PlayerController())
