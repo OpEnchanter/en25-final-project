@@ -1,10 +1,13 @@
 import * as Engine from "./lib/engine.ts";
 import chalk from "chalk";
 
+import { createNoise2D, type NoiseFunction2D } from "simplex-noise";
+
 import tiledata from "./assets/tiles/tiledata.json"
 
 let textBox: TextBox | undefined = undefined;
 let player: Engine.GameObject;
+let camera: Engine.GameObject;
 let playerTransform: Engine.Transform;
 
 const dynamicObjectFunctions: Record<string, (position: Engine.vector, tileScale: number, objectData: any)=>Engine.GameObject> = {
@@ -485,6 +488,48 @@ class MovingPlatform extends Engine.ComponentBase {
     }
 }
 
+class CloudRenderer extends Engine.ComponentBase {
+    noise2D: NoiseFunction2D = createNoise2D();
+
+    lowerBound = 0.6;
+    resolutionDivisor = 8
+
+    cameraTransform: Engine.Transform | undefined;
+
+    t = 0;
+
+    override onInitialized(): void {
+        this.cameraTransform = camera.getComponents(Engine.Transform)[0] as Engine.Transform;
+    }
+
+    override onUpdate(): void {
+        if (!app.ctx || !this.cameraTransform) return
+        app.ctx.fillStyle = "#ffffff2f";
+        const cp = app.renderingClippingPlane.position;
+        for (let x = 0; x<Math.round(app.viewportScale.x / this.resolutionDivisor); x++) {
+            for (let y = 0; y<Math.round(app.viewportScale.y / this.resolutionDivisor); y++) {
+                let td = (y / Math.round((60/this.resolutionDivisor)))
+                if (y*this.resolutionDivisor > 60) td = 0;
+                let nval = 
+                    Math.max((this.noise2D((((x+this.t/32) + cp.x / 32) * 0.05), ((y) * 0.05)) + 1) / 2-this.lowerBound, 0)
+                     * ((td**2) * 8)
+                    ;
+                
+                const cc = 200+td*55
+                app.ctx.fillStyle = `rgba(${cc},${cc},${cc},${nval/4})`
+                app.ctx.beginPath();
+                app.ctx.arc(
+                    x*this.resolutionDivisor, 
+                    y*this.resolutionDivisor-cp.y-100, 
+                    (nval)*8, 
+                    0, 2*Math.PI);   
+                app.ctx.fill();
+            }
+        }
+        this.t++;
+    }
+}
+
 let levelIndex = 0;
 let playerSpawnPosition = {x:-64, y:-24};
 const tileset: Record<string, Array<Array<string>>> = tiledata.tilesets;
@@ -622,13 +667,19 @@ function startLevelLoad() {
 
     textBox = textBoxObject.getComponents(TextBox)[0] as TextBox;
 
-    loadWorldFromJson(worldJson as SerializedWorld, app, 16)
-
-    app.addObject(new Engine.GameObjectBuilder(app)
+    camera = new Engine.GameObjectBuilder(app)
         .addComponent(new Engine.Transform({x:-64, y:-512}, 0, {x:0, y:0}))
         .addComponent(new Engine.Camera())
         .addComponent(new CameraController(playerTransform))
+        .build()
+
+    app.addObject(new Engine.GameObjectBuilder(app)
+        .addComponent(new CloudRenderer())
         .build())
+
+    loadWorldFromJson(worldJson as SerializedWorld, app, 16)
+
+    app.addObject(camera)
 
     app.addObject(player)
 

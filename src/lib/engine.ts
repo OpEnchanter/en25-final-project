@@ -59,7 +59,7 @@ export function fixScale(canvas: HTMLCanvasElement, downscaleFactor: number) {
     canvas.height = (document.body.clientHeight / downscaleFactor);
 }
 
-export function draw(ctx: any, image: HTMLImageElement | HTMLCanvasElement, rotation: number, position: vector, scale: vector) {
+export function draw(ctx: any, image: HTMLImageElement, rotation: number, position: vector, scale: vector) {
     if (!ctx) {throw new Error("Canvas context not found")}
     const xscalar = scale.x < 0 ? -1 : 1
     ctx.translate(position.x, position.y);
@@ -129,7 +129,7 @@ export class Sprite extends ComponentBase {
 }
 
 export class Renderer extends ComponentBase {
-    private ctx: any;
+    private ctx: CanvasRenderingContext2D;
     private sprite: Sprite | null;
     private transform: Transform | null;
     constructor(ctx: any) {
@@ -228,6 +228,7 @@ export class BoxCollider extends ComponentBase {
             const ay = tp.y + this.offset.y
 
             if (debugEnabled) {
+                if (!this.object.app.ctx) return;
                 this.object.app.ctx.fillStyle = this.isTrigger ? "#afffaf" : "#ffefaf"
                 this.object.app.ctx.fillRect(ax-this.bounds.x/2 - this.object.app.renderingClippingPlane.position.x + this.object.app.viewportScale.x / 2, ay-this.bounds.y/2 - this.object.app.renderingClippingPlane.position.y + this.object.app.viewportScale.y / 2, this.bounds.x, this.bounds.y)
             }
@@ -574,7 +575,7 @@ type ApplicationOptions = {
 export class App {
     public objects: Array<GameObject> = [];
     canvas: HTMLCanvasElement;
-    public ctx: any;
+    public ctx: CanvasRenderingContext2D | undefined = undefined;
 
     private isRunning: boolean = false;
 
@@ -598,7 +599,10 @@ export class App {
             canvas.id = "canvas";
             return canvas;
         })());
-        this.ctx = this.canvas.getContext("2d");
+
+        const ctx: CanvasRenderingContext2D | null = this.canvas.getContext("2d")
+        if (!ctx) return;
+        this.ctx = ctx;
         this.ctx.imageSmoothingEnabled = false
 
         if (!this.options.downscaleFactor) return
@@ -634,6 +638,7 @@ export class App {
         })
         console.log(`[${chalk.blueBright("Info")}] App starting!`)
         this.intervalId = setInterval(() => {
+            if (!this.ctx) return;
             const dsf = this.options.downscaleFactor
             fixScale(this.canvas, dsf ? dsf : 1)
             this.ctx.fillStyle = "#9fdfff"
