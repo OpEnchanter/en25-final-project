@@ -77,6 +77,19 @@ const dynamicObjectFunctions: Record<string, (position: Engine.vector, tileScale
             .addComponent(new Engine.BoxCollider({x: 48, y: 16}, {x:0, y:0}, false))
             .addComponent(new MovingPlatform(objectData.x_translation, objectData.y_translation, objectData.speed))
             .build())
+    },
+    "enemy": (position: Engine.vector, tileScale: number, objectData: any)=>{
+        return (new Engine.GameObjectBuilder(app)
+            .addComponent(new Engine.Transform({x:tileScale * position.x, y:tileScale * position.y}, 0, {x:tileScale, y:tileScale}))
+            .addComponent(new Engine.Sprite("/src/assets/tiles/enemy/animation/walking/1.png"))
+            .addComponent(new Engine.Renderer(app.ctx))
+            .addComponent(new Engine.BoxCollider({x: 1, y: 8}, {x:-9, y:2}, true))
+            .addComponent(new Engine.BoxCollider({x: 1, y: 8}, {x:9, y:2}, true))
+            .addComponent(new Engine.BoxCollider({x: 16, y: 1}, {x:0, y:-11}, true))
+            .addComponent(new Engine.BoxCollider({x: 16, y: 16}, {x:0, y:0}, false))
+            .addComponent(new Engine.Rigidbody({bounciness: 0, friction: 1, drag: 1} as Engine.BodyProperties))
+            .addComponent(new Enemy())
+            .build())
     }
 };
 
@@ -209,12 +222,16 @@ class PlayerHealthController extends Engine.ComponentBase {
         this.transform = this.object?.getComponents(Engine.Transform)[0] as Engine.Transform;
     }
 
+    public kill(): void {
+        playerTransform.position.x = playerSpawnPosition.x;
+        playerTransform.position.y = playerSpawnPosition.y - 1;
+        (player.getComponents(Engine.Rigidbody)[0] as Engine.Rigidbody).velocity = {x:0, y:-2}
+    }
+
     override onUpdate(): void {
         if (!this.transform) return
         if (this.transform.position.y > 96) {
-            playerTransform.position.x = playerSpawnPosition.x;
-            playerTransform.position.y = playerSpawnPosition.y - 1;
-            (player.getComponents(Engine.Rigidbody)[0] as Engine.Rigidbody).velocity = {x:0, y:-2}
+            this.kill();
         }
     }
 }
@@ -526,6 +543,94 @@ class CloudRenderer extends Engine.ComponentBase {
                 app.ctx.fill();
             }
         }
+        this.t++;
+    }
+}
+
+class Enemy extends Engine.ComponentBase {
+    sprite: Engine.Sprite | undefined = undefined;
+    rigidbody: Engine.Rigidbody | undefined = undefined;
+    transform: Engine.Transform | undefined = undefined;
+    collider: Engine.BoxCollider | undefined = undefined;
+
+    playerTransform: Engine.Transform | undefined = undefined;
+    playerHeathController: PlayerHealthController | undefined = undefined
+    playerRb: Engine.Rigidbody | undefined = undefined;
+    animation: Array<HTMLImageElement> = [];
+    t: number = 0;
+
+    vel: number = -1;
+
+    getAnimFrame(id: number): HTMLImageElement {
+        const img = new window.Image();
+        img.src = `/src/assets/tiles/enemy/animation/walking/${id}.png`
+        return img;
+    }
+
+    override onInitialized(): void {
+        this.animation.push(this.getAnimFrame(1))
+        this.animation.push(this.getAnimFrame(2))
+
+        this.sprite = this.object?.getComponents(Engine.Sprite)[0] as Engine.Sprite;
+        this.rigidbody = this.object?.getComponents(Engine.Rigidbody)[0] as Engine.Rigidbody;
+        this.transform = this.object?.getComponents(Engine.Transform)[0] as Engine.Transform;
+        this.collider = this.object?.getComponents(Engine.BoxCollider)[0] as Engine.BoxCollider;
+
+        this.playerTransform = player.getComponents(Engine.Transform)[0] as Engine.Transform;
+        this.playerHeathController = player.getComponents(PlayerHealthController)[0] as PlayerHealthController;
+        this.playerRb = player.getComponents(Engine.Rigidbody)[0] as Engine.Rigidbody;
+    }
+
+    kill() {
+        if (!this.transform || !this.playerTransform || !this.playerHeathController || !this.playerRb || !this.object || !this.collider) return
+        this.playerRb.velocity.y = -2;
+        this.transform.scale.y = 6
+        this.transform.position.y += 5;
+        this.object?.Components.splice(this.object.Components.indexOf(this.rigidbody as Engine.ComponentBase))
+        this.vel = 0;
+
+        setTimeout(() => {
+            if (!this.transform) return
+            this.transform.position.y = 1000;
+        }, 500)
+    }
+
+    override onTriggerEnter(params: Engine.TriggerData): void {
+        if (!this.transform || !this.playerTransform || !this.playerHeathController || !this.playerRb) return
+        if (this.vel == 0) return
+        if (params.object === player) {
+            const isHorizontal = this.playerTransform.position.x < (this.transform.position.x - 8) || this.playerTransform.position.x > (this.transform.position.x + 8);
+            if (this.playerTransform.position.y <= this.transform.position.y - 14) {
+                this.kill();
+            } else if (isHorizontal) {
+                this.playerHeathController.kill();
+            }
+        } else {
+            this.vel *= -1;
+            this.transform.position.x += this.vel
+        }
+    }
+
+    override onTriggerStay(params: Engine.TriggerData): void {
+        if (!this.transform || !this.rigidbody || !this.playerTransform || !this.playerHeathController || !this.playerRb) return
+        if (this.vel == 0) return
+        if (params.object === player) {
+            const isHorizontal = this.playerTransform.position.x < (this.transform.position.x - 8) || this.playerTransform.position.x > (this.transform.position.x + 8);
+            if (this.playerTransform.position.y <= this.transform.position.y - 14) {
+                this.kill();
+            } else if (isHorizontal) {
+                this.playerHeathController.kill();
+            }
+        }
+    }
+
+    override onUpdate(): void {
+        if (!this.sprite || !this.rigidbody || !this.transform) return
+        if (this.transform.position.x > app.renderingClippingPlane.position.x + app.renderingClippingPlane.scale.x + 32) return
+
+        if (Math.abs(this.vel)>0) this.sprite.texture = this.animation[(Math.round(this.t / 15) % this.animation.length)]
+        this.rigidbody.velocity.x = this.vel;
+
         this.t++;
     }
 }

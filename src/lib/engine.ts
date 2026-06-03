@@ -346,27 +346,9 @@ export class Rigidbody extends ComponentBase {
                 const otherBody = params.object;
                 if (!otherBody) return;
                 const obRb = otherBody.getComponents(Rigidbody)[0] as Rigidbody
-                if (obRb) {
-                    const obDensity = obRb.bodyProps.density;
-
-                    const density = this.bodyProps.density;
-
-                    const totalDensity = obDensity + density;
-
-                    obRb.velocity = {
-                        x: obRb.velocity.x + vMath.normalize(this.velocity).x * (vMath.magnitude(this.velocity) * (density/totalDensity)),
-                        y: obRb.velocity.y + vMath.normalize(this.velocity).y * (vMath.magnitude(this.velocity) * (density/totalDensity))
-                    }
-
-                    this.velocity = {
-                        x:r.x * (vMath.magnitude(this.velocity) * (obDensity/totalDensity)), 
-                        y:r.y * (vMath.magnitude(this.velocity) * (obDensity/totalDensity))
-                    }
-                } else {
-                    this.velocity = {
-                        x:r.x * vMath.magnitude(this.velocity) * (-1*((1-this.bodyProps.bounciness)*-b.y) + 1) * (-1*((1-this.bodyProps.friction)*b.x) + 1), 
-                        y:r.y * vMath.magnitude(this.velocity) * (-1*((1-this.bodyProps.bounciness)*b.x) + 1) * (-1*((1-this.bodyProps.friction)*b.y) + 1)
-                    }
+                this.velocity = {
+                    x:r.x * vMath.magnitude(this.velocity) * (-1*((1-this.bodyProps.bounciness)*-b.y) + 1) * (-1*((1-this.bodyProps.friction)*b.x) + 1), 
+                    y:r.y * vMath.magnitude(this.velocity) * (-1*((1-this.bodyProps.bounciness)*b.x) + 1) * (-1*((1-this.bodyProps.friction)*b.y) + 1)
                 }
             } else if (this.object?.isColliding && this.object.isCollidingOld) {
                 this.velocity.x *= (-1*((1-this.bodyProps.friction)*b.x) + 1)
@@ -493,6 +475,9 @@ export class GameObject {
 
         this.collisionData = [];
         this.triggerData = [];
+
+        this.isColliding = false;
+        this.isTriggerred = false;
 
         for (const m of this.Components) {
             m.onCollisionUpdate();
@@ -631,7 +616,7 @@ export class App {
             object.onInitialized();
         }
         document.body.addEventListener("keydown", (e) => {
-            if (e.key === "g" && e.altKey) {
+            if (e.key === "h" && e.altKey) {
                 e.preventDefault();
                 debugEnabled = !debugEnabled;
             }
