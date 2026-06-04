@@ -65,7 +65,7 @@ for (const t of tiles) {
         e.appendChild(span);
 
         radio.addEventListener("change", (e) => {
-            currentTile = e?.target?.value;
+            currentTile = (e?.target as HTMLInputElement).value;
 
             if (selectedStaticObject !== -1) {
                 const obj: StaticObject = scene.staticObjects[selectedStaticObject] as StaticObject
@@ -278,8 +278,8 @@ class EditorRenderer extends Engine.ComponentBase {
                     collisionEnabledCheckbox.type = "checkbox"
 
                     collisionEnabledCheckbox.addEventListener("change", (e) => {
-                        o.hasCollision = e?.target?.checked;
-                        collisionEnabledText.innerText = e?.target?.checked ? "Collision Enabled" : "Collision Disabled"
+                        o.hasCollision = (e?.target as HTMLInputElement).checked;
+                        collisionEnabledText.innerText = (e?.target as HTMLInputElement).checked ? "Collision Enabled" : "Collision Disabled"
                     })
 
                     const collisionEnabledText = document.createElement("span");
@@ -531,12 +531,15 @@ document.getElementById("playtestButton")?.addEventListener("click", (e) => {
 let menuOpen = false;
 function updateSidebar() {
     for (const elem of document.getElementsByClassName("sidebar")) {
-        elem.style.transform = menuOpen ? "translateX(0%)" : "translateX(100%)";
+        (elem as HTMLElement).style.transform = menuOpen ? "translateX(0%)" : "translateX(100%)";
     }
 
-    const levelExport = document.querySelector(".exportedLevel")
+    const levelExport = document.querySelector(".exportedLevel") as HTMLElement
     if (!levelExport) return
     levelExport.style.transform = menuOpen ? "translateX(0%)" : "translateX(calc(-100% - 24px))";
+
+    const sceneOptions = document.querySelector(".sceneOptions") as HTMLElement
+    sceneOptions.style.transform = menuOpen ? "translateX(0%)" : "translateX(calc(-100% - 24px))";
 }
 
 updateSidebar()
