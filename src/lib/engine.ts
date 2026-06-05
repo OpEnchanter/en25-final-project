@@ -588,6 +588,9 @@ export class App {
 
     public viewportScale: vector = {x:0,y:0}
 
+    lastClientScale: vector = {x:0, y:0}
+    lastDownscaleFactor: number = 1
+
     constructor (options?: ApplicationOptions) {
         this.options = options ? options : {
             downscaleFactor: 1
@@ -603,14 +606,19 @@ export class App {
         this.ctx = ctx;
         this.ctx.imageSmoothingEnabled = false
 
-        if (!this.options.downscaleFactor) return
-        const vw = document.body.clientWidth / this.options.downscaleFactor;
-        const vh = document.body.clientHeight / this.options.downscaleFactor;
-        this.viewportScale = {x:vw, y:vh}
-        this.renderingClippingPlane = {
-            position: {x:vw/2, y:vh/2},
-            scale: {x:vw, y:vh}
-        }
+        setInterval(() => {
+            if (!this.options.downscaleFactor) return
+            const vw = document.body.clientWidth / this.options.downscaleFactor;
+            const vh = document.body.clientHeight / this.options.downscaleFactor;
+            if (this.lastClientScale.x == vw && this.lastClientScale.y == vh && this.lastDownscaleFactor == this.options.downscaleFactor) return
+            this.viewportScale = {x:vw, y:vh}
+            this.renderingClippingPlane = {
+                position: {x:vw/2, y:vh/2},
+                scale: {x:vw, y:vh}
+            }
+            this.lastClientScale = {x:vw, y:vh}
+            this.lastDownscaleFactor = this.options.downscaleFactor;
+        }, 500);
     }
 
     addObject(obj: GameObject) {

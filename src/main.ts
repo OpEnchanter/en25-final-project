@@ -3,7 +3,7 @@ import chalk from "chalk";
 
 import { createNoise2D, type NoiseFunction2D } from "simplex-noise";
 
-import tiledata from "./assets/tiles/tiledata.json"
+import tiledata from "/assets/tiles/tiledata.json"
 import data from "./data/data.json"
 
 let textBox: TextBox | undefined = undefined;
@@ -18,28 +18,28 @@ const dynamicObjectFunctions: Record<string, (position: Engine.vector, tileScale
     "sign": (position: Engine.vector, tileScale: number, objectData: any)=>{
         return (new Engine.GameObjectBuilder(app)
             .addComponent(new Engine.Transform({x:tileScale * position.x, y:tileScale * position.y}, 0, {x:tileScale, y:tileScale}))
-            .addComponent(new Engine.Sprite("/src/assets/tiles/props/sign.png"))
+            .addComponent(new Engine.Sprite("assets/tiles/props/sign.png"))
             .addComponent(new Engine.Renderer(app.ctx))
             .build())
     },
     "flower_red": (position: Engine.vector, tileScale: number, objectData: any)=>{
         return (new Engine.GameObjectBuilder(app)
             .addComponent(new Engine.Transform({x:tileScale * position.x, y:tileScale * position.y}, 0, {x:tileScale, y:tileScale}))
-            .addComponent(new Engine.Sprite("/src/assets/tiles/props/flower-red.png"))
+            .addComponent(new Engine.Sprite("assets/tiles/props/flower-red.png"))
             .addComponent(new Engine.Renderer(app.ctx))
             .build())
     },
     "flower_blue": (position: Engine.vector, tileScale: number, objectData: any)=>{
         return (new Engine.GameObjectBuilder(app)
             .addComponent(new Engine.Transform({x:tileScale * position.x, y:tileScale * position.y}, 0, {x:tileScale, y:tileScale}))
-            .addComponent(new Engine.Sprite("/src/assets/tiles/props/flower-blue.png"))
+            .addComponent(new Engine.Sprite("assets/tiles/props/flower-blue.png"))
             .addComponent(new Engine.Renderer(app.ctx))
             .build())
     },
     "lucky_block": (position: Engine.vector, tileScale: number, objectData: any)=>{
         return (new Engine.GameObjectBuilder(app)
             .addComponent(new Engine.Transform({x:tileScale * position.x, y:tileScale * position.y}, 0, {x:tileScale, y:tileScale}))
-            .addComponent(new Engine.Sprite("/src/assets/tiles/lucky.png"))
+            .addComponent(new Engine.Sprite("assets/tiles/lucky.png"))
             .addComponent(new Engine.Renderer(app.ctx))
             .addComponent(new Engine.BoxCollider({x: 16, y: 16}, {x:0, y:0}, false))
             .addComponent(new Engine.BoxCollider({x: 4, y: 8}, {x:0, y:8}, true))
@@ -49,7 +49,7 @@ const dynamicObjectFunctions: Record<string, (position: Engine.vector, tileScale
     "title": (position: Engine.vector, tileScale: number, objectData: any) => {
         return (new Engine.GameObjectBuilder(app)
             .addComponent(new Engine.Transform({x:tileScale * position.x, y:tileScale * position.y}, 0, {x:16*tileScale, y:8*tileScale}))
-            .addComponent(new Engine.Sprite("/src/assets/tiles/title.png"))
+            .addComponent(new Engine.Sprite("assets/tiles/title.png"))
             .addComponent(new Engine.Renderer(app.ctx))
             .build())
     },
@@ -62,7 +62,7 @@ const dynamicObjectFunctions: Record<string, (position: Engine.vector, tileScale
     "checkpoint": (position: Engine.vector, tileScale: number, objectData: any) => {
         return (new Engine.GameObjectBuilder(app)
             .addComponent(new Engine.Transform({x:tileScale * position.x, y:tileScale * position.y}, 0, {x:tileScale, y:tileScale}))
-            .addComponent(new Engine.Sprite("/src/assets/tiles/flag/1.png"))
+            .addComponent(new Engine.Sprite("assets/tiles/flag/1.png"))
             .addComponent(new Engine.Renderer(app.ctx))
             .addComponent(new Checkpoint())
             .build())
@@ -76,7 +76,7 @@ const dynamicObjectFunctions: Record<string, (position: Engine.vector, tileScale
     "moving_platform": (position: Engine.vector, tileScale: number, objectData: any)=>{
         return (new Engine.GameObjectBuilder(app)
             .addComponent(new Engine.Transform({x:tileScale * position.x, y:tileScale * position.y}, 0, {x:3*tileScale, y:tileScale}))
-            .addComponent(new Engine.Sprite("/src/assets/tiles/moving-platform.png"))
+            .addComponent(new Engine.Sprite("assets/tiles/moving-platform.png"))
             .addComponent(new Engine.Renderer(app.ctx))
             .addComponent(new Engine.BoxCollider({x: 48, y: 16}, {x:0, y:0}, false))
             .addComponent(new MovingPlatform(objectData.x_translation, objectData.y_translation, objectData.speed))
@@ -85,7 +85,7 @@ const dynamicObjectFunctions: Record<string, (position: Engine.vector, tileScale
     "enemy": (position: Engine.vector, tileScale: number, objectData: any)=>{
         return (new Engine.GameObjectBuilder(app)
             .addComponent(new Engine.Transform({x:tileScale * position.x, y:tileScale * position.y}, 0, {x:tileScale, y:tileScale}))
-            .addComponent(new Engine.Sprite("/src/assets/tiles/enemy/animation/walking/1.png"))
+            .addComponent(new Engine.Sprite("assets/tiles/enemy/animation/walking/1.png"))
             .addComponent(new Engine.Renderer(app.ctx))
             .addComponent(new Engine.BoxCollider({x: 1, y: 8}, {x:-9, y:2}, true))
             .addComponent(new Engine.BoxCollider({x: 1, y: 8}, {x:9, y:2}, true))
@@ -159,12 +159,12 @@ class PlayerAnimator extends Engine.ComponentBase {
         this.rigidbody = this.object?.getComponents(Engine.Rigidbody)[0] as Engine.Rigidbody;
         this.transform = this.object?.getComponents(Engine.Transform)[0] as Engine.Transform;
 
-        this.standingSprite.src = "/src/assets/bennet/standing.png"
-        this.jumpingSprite.src = "/src/assets/bennet/animation/jump/jump.png"
-        this.fallingSprite.src = "/src/assets/bennet/animation/jump/fall.png"
+        this.standingSprite.src = "assets/bennet/standing.png"
+        this.jumpingSprite.src = "assets/bennet/animation/jump/jump.png"
+        this.fallingSprite.src = "assets/bennet/animation/jump/fall.png"
 
-        this.runAnimation.push((() => {let im = new window.Image(); im.src = "/src/assets/bennet/animation/run/1.png"; return im})())
-        this.runAnimation.push((() => {let im = new window.Image(); im.src = "/src/assets/bennet/animation/run/2.png"; return im})())
+        this.runAnimation.push((() => {let im = new window.Image(); im.src = "assets/bennet/animation/run/1.png"; return im})())
+        this.runAnimation.push((() => {let im = new window.Image(); im.src = "assets/bennet/animation/run/2.png"; return im})())
     }
 
     override onUpdate(): void {
@@ -221,7 +221,7 @@ class LuckyBlock extends Engine.ComponentBase {
         if (!this.transform || !this.sprite) return
         if (!this.triggered) {
             this.triggered = true
-            this.sprite.texture.src = "/src/assets/tiles/lucky-consumed.png"
+            this.sprite.texture.src = "assets/tiles/lucky-consumed.png"
             app.addObject(dynamicObjectFunctions[this.contents]({x:this.transform.position.x / 16, y:this.transform.position.y / 16 - 1}, 16, {contents:""}));
         }
     }
@@ -329,7 +329,7 @@ class TextBox extends Engine.ComponentBase {
 
     private getTexture(name: string) {
         const img = new window.Image();
-        img.src = `/src/assets/tiles/textbox/${name}.png`;
+        img.src = `assets/tiles/textbox/${name}.png`;
         return img;
     }
 
@@ -396,7 +396,7 @@ class TextBox extends Engine.ComponentBase {
             app.ctx.font = "7px 'PressStart2P'"
             app.ctx.fillStyle = "black"
 
-            drawWrappedText(app.ctx, splicedText, xpad+8, ypad+8, cwid, 8)
+            drawWrappedText(app.ctx, splicedText, xpad+8, ypad+8, cwid, 9)
 
             this.t++;
         }
@@ -429,7 +429,7 @@ class Checkpoint extends Engine.ComponentBase {
         this.initialPosition.x = this.transform.position.x;
         this.initialPosition.y = this.transform.position.y;
 
-        this.claimedImage.src = '/src/assets/tiles/flag/2.png'
+        this.claimedImage.src = 'assets/tiles/flag/2.png'
     }
 
     override onUpdate(): void {
@@ -579,7 +579,7 @@ class Enemy extends Engine.ComponentBase {
 
     getAnimFrame(id: number): HTMLImageElement {
         const img = new window.Image();
-        img.src = `/src/assets/tiles/enemy/animation/walking/${id}.png`
+        img.src = `assets/tiles/enemy/animation/walking/${id}.png`
         return img;
     }
 
@@ -657,7 +657,7 @@ class Backdrop extends Engine.ComponentBase {
     constructor(tileName: string) {
         super();
         this.tile = new window.Image();
-        this.tile.src = `/src/assets/tiles/${tileName}.png`
+        this.tile.src = `assets/tiles/${tileName}.png`
     }
 
     override onLateUpdate(): void {
@@ -699,7 +699,7 @@ class BlankScreenDialogue extends Engine.ComponentBase {
 
     private getTexture(name: string) {
         const img = new window.Image();
-        img.src = `/src/assets/tiles/textbox/${name}.png`;
+        img.src = `assets/tiles/textbox/${name}.png`;
         return img;
     }
 
@@ -769,7 +769,7 @@ class BlankScreenDialogue extends Engine.ComponentBase {
             app.ctx.font = "7px 'PressStart2P'"
             app.ctx.fillStyle = "#c0cbdc"
 
-            drawWrappedText(app.ctx, splicedText, xpad+8, ypad+8, cwid, 8)
+            drawWrappedText(app.ctx, splicedText, xpad+8, ypad+8, cwid, 9)
 
             this.t += 1/this.writeSpeed;
         }
@@ -792,7 +792,7 @@ function loadWorldFromJson(world: SerializedWorld, app: Engine.App, tileScale: n
         }
         if (object.objectId !== 'null' && Object.keys(tileset)) {
             const isTileset = Object.keys(tileset).includes(object.objectId) ? true : false;
-            let spriteSrc =  isTileset ? "" : `/src/assets/tiles/${object.objectId}.png`
+            let spriteSrc =  isTileset ? "" : `assets/tiles/${object.objectId}.png`
             console.log(spriteSrc)
             for (let b = 0; b < k.x; b++) {
                 for (let i = 0; i < k.y; i++) {
@@ -826,7 +826,7 @@ function loadWorldFromJson(world: SerializedWorld, app: Engine.App, tileScale: n
                                 continue
                             } else {
                                 if (!tileset[object.objectId]?.[tileType.y]?.[tileType.x]) continue
-                                spriteSrc = `/src/assets/tiles/${tileset[object.objectId]?.[tileType.y]?.[tileType.x] as string}.png`
+                                spriteSrc = `assets/tiles/${tileset[object.objectId]?.[tileType.y]?.[tileType.x] as string}.png`
                             }
                         }
                         let o: Engine.GameObject = new Engine.GameObjectBuilder(app)
@@ -861,8 +861,12 @@ ${chalk.italic("alt+g")} | Show Hitboxes
 `)
 
 const app = new Engine.App({
-    downscaleFactor: 4
+    downscaleFactor: 4*(window.innerHeight / 665)
 });
+
+setInterval(() => {
+    app.options.downscaleFactor = 4*(window.innerHeight / 665)
+}, 500)
 
 function startLevelLoad() {
     app.objects = [];
@@ -882,7 +886,7 @@ function startLevelLoad() {
     document.title = urlParams.get("map") ? "Custom Map" : "Campaign"
 
     player = new Engine.GameObjectBuilder(app)
-        .addComponent(new Engine.Sprite("/src/assets/mario.png"))
+        .addComponent(new Engine.Sprite("assets/mario.png"))
         .addComponent(new Engine.Renderer(app.ctx))
         .addComponent(new Engine.Transform(playerSpawnPosition, 0, {x:12, y:16}))
         .addComponent(new Engine.BoxCollider({x: 12, y: 16}, {x:0, y:0}, false))
