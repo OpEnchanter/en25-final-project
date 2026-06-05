@@ -569,7 +569,7 @@ let selectedDynamicObject: number = -1;
 const queryString = window.location.search;
 const urlParams = new URLSearchParams(queryString);
 
-scene = urlParams.get("map") ? JSON.parse(urlParams.get("map") as string) : scene
+scene = urlParams.get("map") ? JSON.parse(decodeURI(urlParams.get("map") as string)) : scene
 
 const app = new Engine.App({
     downscaleFactor: 2

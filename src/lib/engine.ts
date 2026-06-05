@@ -101,6 +101,8 @@ export class ComponentBase {
 
     onLateUpdate(): void {};
 
+    onLateRender(): void {};
+
     onInitialized(): void {};
 }
 
@@ -146,11 +148,11 @@ export class Renderer extends ComponentBase {
 
     override onLateUpdate(): void {
         if (!this.transform || !this.object) {return}
-        const vscale = this.object.app.viewportScale;
+        const vscale = this.object.app.renderingClippingPlane.scale;
         const cplane = this.object.app.renderingClippingPlane;
         const p = {
-            x: Math.round(this.transform.position.x - (cplane.position.x - vscale.x / 2)),
-            y: Math.round(this.transform.position.y - (cplane.position.y - vscale.y / 2))
+            x: Math.floor(this.transform.position.x - (cplane.position.x - vscale.x / 2)),
+            y: Math.floor(this.transform.position.y - (cplane.position.y - vscale.y / 2))
         } as vector
         if (p.x - Math.abs(this.transform.scale.x) < vscale.x && p.y - Math.abs(this.transform.scale.y) < vscale.y) {
             draw(this.ctx, this.sprite?.texture as HTMLImageElement, this.transform?.rotation as number, p, this.transform?.scale as vector)
@@ -388,7 +390,10 @@ export class Camera extends ComponentBase {
 
     override onUpdate(): void {
         if (!this.transform || !this.object) return
-        this.object.app.renderingClippingPlane.position = this.transform.position;
+        this.object.app.renderingClippingPlane.position = {
+            x: Math.floor(this.transform.position.x),
+            y: Math.floor(this.transform.position.y)
+        };
     }
 }
 
@@ -525,12 +530,20 @@ export class GameObject {
             }
         }
 
+        this.isCollidingOld = this.isColliding;
+        this.isTriggerredOld = this.isTriggerred;
+    }
+
+    public onLateUpdate() {
         for (const m of this.Components) {
             m.onLateUpdate();
         }
+    }
 
-        this.isCollidingOld = this.isColliding;
-        this.isTriggerredOld = this.isTriggerred;
+    public onLateRender() {
+        for (const m of this.Components) {
+            m.onLateRender();
+        }
     }
 }
 
@@ -630,6 +643,12 @@ export class App {
             this.ctx.fillRect(0, 0, this.canvas.clientWidth, this.canvas.clientHeight);
             for (const object of this.objects) {
                 object.onUpdate();
+            }
+            for (const object of this.objects) {
+                object.onLateUpdate();
+            }
+            for (const object of this.objects) {
+                object.onLateRender();
             }
             t++;
         }, 1000/targetFramerate)

@@ -4,11 +4,15 @@ import chalk from "chalk";
 import { createNoise2D, type NoiseFunction2D } from "simplex-noise";
 
 import tiledata from "./assets/tiles/tiledata.json"
+import data from "./data/data.json"
 
 let textBox: TextBox | undefined = undefined;
 let player: Engine.GameObject;
 let camera: Engine.GameObject;
 let playerTransform: Engine.Transform;
+
+let levelIndex = 0;
+let playerSpawnPosition = {x:-64, y:-24};
 
 const dynamicObjectFunctions: Record<string, (position: Engine.vector, tileScale: number, objectData: any)=>Engine.GameObject> = {
     "sign": (position: Engine.vector, tileScale: number, objectData: any)=>{
@@ -90,6 +94,11 @@ const dynamicObjectFunctions: Record<string, (position: Engine.vector, tileScale
             .addComponent(new Engine.Rigidbody({bounciness: 0, friction: 1, drag: 1} as Engine.BodyProperties))
             .addComponent(new Enemy())
             .build())
+    },
+    "story_dialogue": (position: Engine.vector, tileScale: number, objectData: any) => {
+        return (new Engine.GameObjectBuilder(app)
+            .addComponent(new BlankScreenDialogue(objectData.text))
+            .build())
     }
 };
 
@@ -158,7 +167,7 @@ class PlayerAnimator extends Engine.ComponentBase {
         this.runAnimation.push((() => {let im = new window.Image(); im.src = "/src/assets/bennet/animation/run/2.png"; return im})())
     }
 
-    override onLateUpdate(): void {
+    override onUpdate(): void {
         if (!this.sprite || !this.rigidbody || !this.transform) return
         if (Math.abs(this.rigidbody.velocity.x) > 0.2) {
             this.sprite.texture = this.runAnimation[(Math.floor(this.idx) % this.runAnimation.length)];
@@ -240,23 +249,27 @@ class PlayerHealthController extends Engine.ComponentBase {
 }
 
 function drawWrappedText(ctx: any, text: string, x: number, y: number, maxWidth: number, lineHeight: number) {
-    const words = text.split(" ");
-    let currentLine = "";
+    const lines = text.split(":nl");
+    for (const line of lines) {
+        const words = line.split(" ");
+        let currentLine = "";
 
-    for (let i = 0; i < words.length; i++) {
-        let testLine = currentLine + words[i] + " ";
-        let metrics = ctx.measureText(testLine);
-        let testWidth = metrics.width;
-        if (testWidth > maxWidth && i > 0) {
-            ctx.fillText(currentLine, x, y);
-            currentLine = words[i] + " ";
-            y += lineHeight;          
-        } else {
-            currentLine = testLine;
+        for (let i = 0; i < words.length; i++) {
+            let testLine = currentLine + words[i] + " ";
+            let metrics = ctx.measureText(testLine);
+            let testWidth = metrics.width;
+            if (testWidth > maxWidth && i > 0) {
+                ctx.fillText(currentLine, x, y);
+                currentLine = words[i] + " ";
+                y += lineHeight;
+            } else {
+                currentLine = testLine;
+            }
         }
+        
+        ctx.fillText(currentLine, x, y);
+        y += lineHeight;
     }
-    
-    ctx.fillText(currentLine, x, y);
 }
 
 class TextTrigger extends Engine.ComponentBase {
@@ -341,7 +354,7 @@ class TextBox extends Engine.ComponentBase {
         })
     }
 
-    override onUpdate(): void {
+    override onLateRender(): void {
         // Top row
         const xpad = 32;
         const ypad = 16;
@@ -349,7 +362,7 @@ class TextBox extends Engine.ComponentBase {
         const chi = 16
 
         if (this.pages.length !== 0) {
-            const splicedText = this.pages?.[this.pageIdx].slice(0, Math.round(this.t/this.writeSpeed));
+            const splicedText = this.pages?.[this.pageIdx].slice(0, Math.floor(this.t/this.writeSpeed));
 
             if (splicedText.length === this.pages[this.pageIdx]?.length && this.spacePressed) {
                 if (this.pageIdx < this.pages.length - 1) {
@@ -526,9 +539,9 @@ class CloudRenderer extends Engine.ComponentBase {
         if (!app.ctx || !this.cameraTransform) return
         app.ctx.fillStyle = "#ffffff2f";
         const cp = app.renderingClippingPlane.position;
-        for (let x = 0; x<Math.round(app.viewportScale.x / this.resolutionDivisor); x++) {
-            for (let y = 0; y<Math.round(app.viewportScale.y / this.resolutionDivisor); y++) {
-                let td = (y / Math.round((60/this.resolutionDivisor)))
+        for (let x = 0; x<Math.floor(app.viewportScale.x / this.resolutionDivisor); x++) {
+            for (let y = 0; y<Math.floor(app.viewportScale.y / this.resolutionDivisor); y++) {
+                let td = (y / Math.floor((60/this.resolutionDivisor)))
                 if (y*this.resolutionDivisor > 60) td = 0;
                 let nval = 
                     Math.max((this.noise2D((((x+this.t/32) + cp.x / 32) * 0.05), ((y) * 0.05)) + 1) / 2-this.lowerBound, 0)
@@ -631,7 +644,7 @@ class Enemy extends Engine.ComponentBase {
         if (!this.sprite || !this.rigidbody || !this.transform) return
         if (this.transform.position.x > app.renderingClippingPlane.position.x + app.renderingClippingPlane.scale.x + 32) return
 
-        if (Math.abs(this.vel)>0) this.sprite.texture = this.animation[(Math.round(this.t / 15) % this.animation.length)]
+        if (Math.abs(this.vel)>0) this.sprite.texture = this.animation[(Math.floor(this.t / 15) % this.animation.length)]
         this.rigidbody.velocity.x = this.vel;
 
         this.t++;
@@ -648,18 +661,122 @@ class Backdrop extends Engine.ComponentBase {
     }
 
     override onLateUpdate(): void {
-        const sx = Math.round(app.renderingClippingPlane.position.x / 16) * 16 - app.renderingClippingPlane.position.x;
-        const sy = Math.round(app.renderingClippingPlane.position.y / 16) * 16 - app.renderingClippingPlane.position.y;
-        for (let x = 0; x < Math.round(app.renderingClippingPlane.scale.x / 16)+1; x++) {
-            for (let y = 0; y < Math.round(app.renderingClippingPlane.scale.y / 16)+2; y++) {
-                Engine.draw(app.ctx, this.tile, 0, {x: sx+(x*16), y: sy+(y*16)}, {x:16, y:16})
+        const sx = Math.floor(app.renderingClippingPlane.position.x / 16) * 16 - app.renderingClippingPlane.position.x;
+        const sy = Math.floor(app.renderingClippingPlane.position.y / 16) * 16 - app.renderingClippingPlane.position.y;
+        for (let x = 0; x < Math.floor(app.renderingClippingPlane.scale.x / 16)+3; x++) {
+            for (let y = 0; y < Math.floor(app.renderingClippingPlane.scale.y / 16)+3; y++) {
+                Engine.draw(app.ctx, this.tile, 0, {x: Math.floor(sx+((x-1)*16)), y: Math.floor(sy+((y-1)*16))}, {x:16, y:16})
             }
         }
     }
 }
 
-let levelIndex = 0;
-let playerSpawnPosition = {x:-64, y:-24};
+class BlankScreenDialogue extends Engine.ComponentBase {
+    advanceButton: HTMLImageElement | undefined = undefined;
+    private pages: Array<String> = [];
+
+    private t = 0;
+    private pageIdx = 0;
+
+    writeSpeed = 1.5;
+
+    nby: number =  -8;
+    nbty: number = -8;
+
+    private spacePressed = false;
+    private shiftPressed = false;
+
+    constructor(text: string) {
+        super();
+        
+        this.pages = text.split("\\")
+    }
+
+    public setPages(pages: Array<string>) {
+        this.pages = pages;
+        this.pageIdx = 0;
+    }
+
+    private getTexture(name: string) {
+        const img = new window.Image();
+        img.src = `/src/assets/tiles/textbox/${name}.png`;
+        return img;
+    }
+
+    override onInitialized(): void {
+        this.advanceButton = this.getTexture("textbox-advance-dark");
+
+        document.body.addEventListener("keydown", (e) => {
+            if (e.key === " ") {
+                this.spacePressed = true;
+            }
+
+            if (e.key === "Shift") {
+                this.shiftPressed = true;
+            }
+        })
+
+        document.body.addEventListener("keyup", (e) => {
+            if (e.key === " ") {
+                this.spacePressed = false;
+            }
+
+            if (e.key === "Shift") {
+                this.shiftPressed = false;
+            }
+        })
+    }
+
+    override onLateRender(): void {
+        if (!app.ctx) return
+        // Top row
+        const xpad = 32;
+        const ypad = 24;
+        const cwid = app.viewportScale.x - (xpad+8)*2;
+
+        app.ctx.fillStyle = "#080415"
+        app.ctx.fillRect(0, 0, app.viewportScale.x, app.viewportScale.y)
+
+        this.writeSpeed = this.shiftPressed ? 0.5 : 1.5
+
+        if (this.pages.length !== 0) {
+            console.log("DRAWING")
+            const splicedText = this.pages?.[this.pageIdx].slice(0, Math.floor(this.t));
+
+            if (splicedText.length === this.pages[this.pageIdx]?.length && this.spacePressed) {
+                if (this.pageIdx < this.pages.length - 1) {
+                    this.pageIdx++;
+                    this.t = 0;
+                } else {
+                    this.pages = [];
+                    levelIndex++;
+
+                    playerSpawnPosition = {x:-64, y:-24};
+
+                    app.stop();
+                    startLevelLoad();
+                    app.start(60);
+                }
+            }
+
+            this.nbty = splicedText.length === this.pages[this.pageIdx]?.length ? 8 : -8
+
+            this.nby += (this.nbty - this.nby) / 4
+
+            if (this.advanceButton) Engine.draw(app.ctx, this.advanceButton, 0, {x:xpad+cwid-24, y: this.nby}, {x:64, y:16})
+
+            // Draw text
+            app.ctx.font = "7px 'PressStart2P'"
+            app.ctx.fillStyle = "#c0cbdc"
+
+            drawWrappedText(app.ctx, splicedText, xpad+8, ypad+8, cwid, 8)
+
+            this.t += 1/this.writeSpeed;
+        }
+    }
+}
+
+
 const tileset: Record<string, Array<Array<string>>> = tiledata.tilesets;
 
 function loadWorldFromJson(world: SerializedWorld, app: Engine.App, tileScale: number) {
@@ -749,10 +866,7 @@ const app = new Engine.App({
 
 function startLevelLoad() {
     app.objects = [];
-    let levels: Array<SerializedWorld> = [
-        {"staticObjects":[{"objectId":"brick_grass","areaStartPos":{"x":-11,"y":0},"areaScale":{"x":13,"y":5},"hasCollision":true},{"objectId":"brick_grass","areaStartPos":{"x":7,"y":0},"areaScale":{"x":2,"y":5},"hasCollision":true},{"objectId":"brick_grass","areaStartPos":{"x":14,"y":0},"areaScale":{"x":2,"y":5},"hasCollision":true},{"objectId":"brick_grass","areaStartPos":{"x":21,"y":0},"areaScale":{"x":2,"y":5},"hasCollision":true},{"objectId":"null","areaStartPos":{"x":-13,"y":-10},"areaScale":{"x":2,"y":12},"hasCollision":true},{"objectId":"brick_grass","areaStartPos":{"x":27,"y":-1},"areaScale":{"x":2,"y":6},"hasCollision":true},{"objectId":"brick_grass","areaStartPos":{"x":31,"y":-4},"areaScale":{"x":2,"y":9},"hasCollision":true},{"objectId":"brick_grass","areaStartPos":{"x":35,"y":0},"areaScale":{"x":2,"y":5},"hasCollision":true},{"objectId":"brick_pit","areaStartPos":{"x":2,"y":0},"areaScale":{"x":5,"y":5},"hasCollision":false},{"objectId":"brick_pit","areaStartPos":{"x":9,"y":0},"areaScale":{"x":5,"y":5},"hasCollision":false},{"objectId":"brick_pit","areaStartPos":{"x":16,"y":0},"areaScale":{"x":5,"y":5},"hasCollision":false},{"objectId":"brick_pit","areaStartPos":{"x":23,"y":0},"areaScale":{"x":4,"y":5},"hasCollision":false},{"objectId":"brick_pit","areaStartPos":{"x":29,"y":0},"areaScale":{"x":2,"y":5},"hasCollision":false},{"objectId":"brick_grass","areaStartPos":{"x":40,"y":0},"areaScale":{"x":24,"y":5},"hasCollision":true},{"objectId":"brick_grass","areaStartPos":{"x":45,"y":-2},"areaScale":{"x":2,"y":3},"hasCollision":true},{"objectId":"brick_grass","areaStartPos":{"x":49,"y":-3},"areaScale":{"x":2,"y":4},"hasCollision":true},{"objectId":"brick_grass","areaStartPos":{"x":53,"y":-5},"areaScale":{"x":2,"y":6},"hasCollision":true},{"objectId":"brick_grass","areaStartPos":{"x":57,"y":-8},"areaScale":{"x":4,"y":1},"hasCollision":true},{"objectId":"brick/brick","areaStartPos":{"x":60,"y":-7},"areaScale":{"x":1,"y":8},"hasCollision":true},{"objectId":"brick_grass","areaStartPos":{"x":64,"y":-8},"areaScale":{"x":79,"y":4},"hasCollision":true},{"objectId":"brick_grass","areaStartPos":{"x":55,"y":-3},"areaScale":{"x":2,"y":4},"hasCollision":true},{"objectId":"brick_grass","areaStartPos":{"x":68,"y":-12},"areaScale":{"x":7,"y":1},"hasCollision":true},{"objectId":"brick_grass","areaStartPos":{"x":77,"y":-15},"areaScale":{"x":8,"y":1},"hasCollision":true},{"objectId":"brick_grass","areaStartPos":{"x":89,"y":-13},"areaScale":{"x":9,"y":1},"hasCollision":true},{"objectId":"brick_grass","areaStartPos":{"x":96,"y":-14},"areaScale":{"x":2,"y":2},"hasCollision":true},{"objectId":"brick_grass","areaStartPos":{"x":101,"y":-17},"areaScale":{"x":8,"y":1},"hasCollision":true},{"objectId":"brick_grass","areaStartPos":{"x":121,"y":-13},"areaScale":{"x":10,"y":1},"hasCollision":true},{"objectId":"brick_grass","areaStartPos":{"x":132,"y":-16},"areaScale":{"x":10,"y":1},"hasCollision":true},{"objectId":"brick_grass","areaStartPos":{"x":64,"y":-9},"areaScale":{"x":2,"y":2},"hasCollision":true},{"objectId":"brick/brick","areaStartPos":{"x":83,"y":-14},"areaScale":{"x":2,"y":6},"hasCollision":true},{"objectId":"brick_grass","areaStartPos":{"x":145,"y":-15},"areaScale":{"x":8,"y":1},"hasCollision":true},{"objectId":"brick_grass","areaStartPos":{"x":157,"y":-9},"areaScale":{"x":8,"y":15},"hasCollision":true},{"objectId":"brick_grass","areaStartPos":{"x":144,"y":-8},"areaScale":{"x":2,"y":2},"hasCollision":true},{"objectId":"brick_grass","areaStartPos":{"x":167,"y":-11},"areaScale":{"x":2,"y":17},"hasCollision":true},{"objectId":"brick_grass","areaStartPos":{"x":172,"y":-14},"areaScale":{"x":2,"y":20},"hasCollision":true},{"objectId":"brick_grass","areaStartPos":{"x":177,"y":-16},"areaScale":{"x":2,"y":22},"hasCollision":true},{"objectId":"brick_grass","areaStartPos":{"x":181,"y":-14},"areaScale":{"x":2,"y":20},"hasCollision":true},{"objectId":"brick_grass","areaStartPos":{"x":187,"y":-17},"areaScale":{"x":2,"y":23},"hasCollision":true},{"objectId":"brick_grass","areaStartPos":{"x":194,"y":-11},"areaScale":{"x":11,"y":17},"hasCollision":true},{"objectId":"brick/brick","areaStartPos":{"x":61,"y":-2},"areaScale":{"x":1,"y":1},"hasCollision":true},{"objectId":"brick/brick","areaStartPos":{"x":63,"y":-4},"areaScale":{"x":2,"y":1},"hasCollision":true},{"objectId":"brick/brick","areaStartPos":{"x":61,"y":-6},"areaScale":{"x":1,"y":1},"hasCollision":true},{"objectId":"brick/brick","areaStartPos":{"x":64,"y":-2},"areaScale":{"x":16,"y":7},"hasCollision":true},{"objectId":"brick/brick","areaStartPos":{"x":65,"y":-4},"areaScale":{"x":15,"y":1},"hasCollision":true},{"objectId":"brick/brick","areaStartPos":{"x":64,"y":-3},"areaScale":{"x":16,"y":1},"hasCollision":false},{"objectId":"stone-bricks/grass/stone-bricks-grass","areaStartPos":{"x":80,"y":0},"areaScale":{"x":8,"y":1},"hasCollision":true},{"objectId":"stone-bricks/stone-bricks","areaStartPos":{"x":80,"y":1},"areaScale":{"x":8,"y":4},"hasCollision":true},{"objectId":"stone-bricks/stone-bricks","areaStartPos":{"x":88,"y":-4},"areaScale":{"x":16,"y":9},"hasCollision":true},{"objectId":"brick/brick","areaStartPos":{"x":141,"y":-4},"areaScale":{"x":2,"y":10},"hasCollision":true},{"objectId":"brick_pit","areaStartPos":{"x":143,"y":-3},"areaScale":{"x":2,"y":9},"hasCollision":true},{"objectId":"brick_grass","areaStartPos":{"x":152,"y":-17},"areaScale":{"x":2,"y":23},"hasCollision":true},{"objectId":"brick_pit","areaStartPos":{"x":154,"y":-9},"areaScale":{"x":3,"y":15},"hasCollision":true},{"objectId":"brick_pit","areaStartPos":{"x":165,"y":-9},"areaScale":{"x":2,"y":15},"hasCollision":true},{"objectId":"brick_pit","areaStartPos":{"x":169,"y":-9},"areaScale":{"x":3,"y":15},"hasCollision":true},{"objectId":"brick_pit","areaStartPos":{"x":174,"y":-9},"areaScale":{"x":3,"y":15},"hasCollision":true},{"objectId":"brick_pit","areaStartPos":{"x":179,"y":-9},"areaScale":{"x":2,"y":15},"hasCollision":true},{"objectId":"brick_pit","areaStartPos":{"x":183,"y":-9},"areaScale":{"x":4,"y":15},"hasCollision":true},{"objectId":"brick_pit","areaStartPos":{"x":189,"y":-9},"areaScale":{"x":5,"y":15},"hasCollision":true},{"objectId":"brick_grass","areaStartPos":{"x":145,"y":-12},"areaScale":{"x":7,"y":18},"hasCollision":true},{"objectId":"brick/brick","areaStartPos":{"x":148,"y":-14},"areaScale":{"x":4,"y":4},"hasCollision":true},{"objectId":"brick/brick-dark","areaStartPos":{"x":132,"y":-15},"areaScale":{"x":10,"y":7},"hasCollision":false},{"objectId":"brick/brick-dark","areaStartPos":{"x":121,"y":-12},"areaScale":{"x":10,"y":4},"hasCollision":false},{"objectId":"brick_grass","areaStartPos":{"x":113,"y":-11},"areaScale":{"x":2,"y":4},"hasCollision":true},{"objectId":"brick/brick-dark","areaStartPos":{"x":101,"y":-16},"areaScale":{"x":8,"y":8},"hasCollision":false},{"objectId":"brick/brick-dark","areaStartPos":{"x":89,"y":-12},"areaScale":{"x":9,"y":4},"hasCollision":false},{"objectId":"brick/brick-dark","areaStartPos":{"x":77,"y":-14},"areaScale":{"x":6,"y":6},"hasCollision":false},{"objectId":"brick/brick-dark","areaStartPos":{"x":68,"y":-11},"areaScale":{"x":7,"y":3},"hasCollision":false},{"objectId":"brick/brick-dark","areaStartPos":{"x":57,"y":-7},"areaScale":{"x":3,"y":6},"hasCollision":false},{"objectId":"brick_grass","areaStartPos":{"x":57,"y":-2},"areaScale":{"x":3,"y":3},"hasCollision":true},{"objectId":"brick_pit","areaStartPos":{"x":33,"y":0},"areaScale":{"x":2,"y":5},"hasCollision":true},{"objectId":"brick_pit","areaStartPos":{"x":37,"y":0},"areaScale":{"x":3,"y":5},"hasCollision":true},{"objectId":"stone-bricks/stone-bricks-dark","areaStartPos":{"x":80,"y":-4},"areaScale":{"x":8,"y":4},"hasCollision":false}],"dynamicObjects":[{"objectId":"title","position":{"x":-4,"y":-6},"objectData":{}},{"objectId":"lucky_block","position":{"x":42,"y":-3},"objectData":{"contents":""}},{"objectId":"lucky_block","position":{"x":7,"y":-4},"objectData":{"contents":""}},{"objectId":"title","position":{"x":199,"y":-17},"objectData":{}},{"objectId":"next_level_trigger","position":{"x":199,"y":-13},"objectData":{}},{"objectId":"checkpoint","position":{"x":149,"y":-16},"objectData":{}},{"objectId":"lucky_block","position":{"x":72,"y":-15},"objectData":{"contents":""}},{"objectId":"sign","position":{"x":-1,"y":-1},"objectData":{}},{"objectId":"text_trigger","position":{"x":-11,"y":-1},"objectData":{"text":"Mr. Bennet: Where has Wickham gone with Lydia now!?!\\I've got to chase them down I guess..."}},{"objectId":"checkpoint","position":{"x":59,"y":-9},"objectData":{}},{"objectId":"flower_red","position":{"x":-7,"y":-1},"objectData":{}},{"objectId":"flower_blue","position":{"x":15,"y":-1},"objectData":{}},{"objectId":"flower_red","position":{"x":31,"y":-5},"objectData":{}},{"objectId":"flower_red","position":{"x":43,"y":-1},"objectData":{}},{"objectId":"flower_blue","position":{"x":54,"y":-6},"objectData":{}},{"objectId":"flower_red","position":{"x":62,"y":-1},"objectData":{}},{"objectId":"flower_blue","position":{"x":74,"y":-13},"objectData":{}},{"objectId":"flower_red","position":{"x":82,"y":-16},"objectData":{}},{"objectId":"flower_blue","position":{"x":96,"y":-15},"objectData":{}},{"objectId":"flower_red","position":{"x":111,"y":-9},"objectData":{}},{"objectId":"flower_blue","position":{"x":124,"y":-14},"objectData":{}},{"objectId":"flower_red","position":{"x":140,"y":-17},"objectData":{}},{"objectId":"flower_blue","position":{"x":135,"y":-17},"objectData":{}},{"objectId":"flower_red","position":{"x":158,"y":-10},"objectData":{}},{"objectId":"flower_blue","position":{"x":172,"y":-15},"objectData":{}},{"objectId":"flower_blue","position":{"x":196,"y":-12},"objectData":{}}]},
-        {"levelOptions": {"background": "stone-bricks/stone-bricks-dark"},"staticObjects":[{"objectId":"stone-bricks/stone-bricks","areaStartPos":{"x":-7,"y":0},"areaScale":{"x":8,"y":6},"hasCollision":true},{"objectId":"stone-bricks/stone-bricks","areaStartPos":{"x":1,"y":-20},"areaScale":{"x":1,"y":19},"hasCollision":true},{"objectId":"stone-bricks/stone-bricks","areaStartPos":{"x":6,"y":-20},"areaScale":{"x":1,"y":23},"hasCollision":true},{"objectId":"stone-bricks/stone-bricks","areaStartPos":{"x":1,"y":0},"areaScale":{"x":6,"y":6},"hasCollision":true},{"objectId":"stone-bricks/stone-bricks","areaStartPos":{"x":5,"y":-2},"areaScale":{"x":1,"y":1},"hasCollision":true},{"objectId":"stone-bricks/stone-bricks","areaStartPos":{"x":4,"y":-9},"areaScale":{"x":2,"y":1},"hasCollision":true},{"objectId":"stone-bricks/stone-bricks","areaStartPos":{"x":2,"y":-5},"areaScale":{"x":1,"y":1},"hasCollision":true},{"objectId":"stone-bricks/stone-bricks","areaStartPos":{"x":5,"y":-12},"areaScale":{"x":1,"y":1},"hasCollision":true},{"objectId":"stone-bricks/stone-bricks","areaStartPos":{"x":2,"y":-12},"areaScale":{"x":2,"y":1},"hasCollision":true},{"objectId":"stone-bricks/stone-bricks","areaStartPos":{"x":2,"y":-15},"areaScale":{"x":2,"y":1},"hasCollision":true},{"objectId":"stone-bricks/stone-bricks","areaStartPos":{"x":5,"y":-17},"areaScale":{"x":2,"y":2},"hasCollision":true},{"objectId":"stone-bricks/stone-bricks","areaStartPos":{"x":2,"y":-20},"areaScale":{"x":2,"y":2},"hasCollision":true},{"objectId":"stone-bricks/stone-bricks","areaStartPos":{"x":5,"y":-20},"areaScale":{"x":2,"y":1},"hasCollision":true},{"objectId":"stone-bricks/stone-bricks","areaStartPos":{"x":1,"y":-28},"areaScale":{"x":1,"y":8},"hasCollision":true},{"objectId":"stone-bricks/stone-bricks","areaStartPos":{"x":2,"y":-28},"areaScale":{"x":45,"y":1},"hasCollision":true},{"objectId":"stone-bricks/stone-bricks","areaStartPos":{"x":7,"y":-20},"areaScale":{"x":16,"y":41},"hasCollision":true},{"objectId":"stone_brick_pit","areaStartPos":{"x":23,"y":-20},"areaScale":{"x":15,"y":41},"hasCollision":false},{"objectId":"stone-bricks/stone-bricks","areaStartPos":{"x":38,"y":-20},"areaScale":{"x":15,"y":41},"hasCollision":true},{"objectId":"stone-bricks/stone-bricks","areaStartPos":{"x":49,"y":-22},"areaScale":{"x":4,"y":2},"hasCollision":true},{"objectId":"stone-bricks/stone-bricks","areaStartPos":{"x":49,"y":-25},"areaScale":{"x":5,"y":1},"hasCollision":true},{"objectId":"stone-bricks/stone-bricks","areaStartPos":{"x":53,"y":-43},"areaScale":{"x":1,"y":71},"hasCollision":true},{"objectId":"stone-bricks/stone-bricks","areaStartPos":{"x":47,"y":-43},"areaScale":{"x":1,"y":20},"hasCollision":true},{"objectId":"stone-bricks/stone-bricks","areaStartPos":{"x":50,"y":-28},"areaScale":{"x":3,"y":2},"hasCollision":true},{"objectId":"stone-bricks/stone-bricks","areaStartPos":{"x":49,"y":-28},"areaScale":{"x":1,"y":1},"hasCollision":true},{"objectId":"stone-bricks/stone-bricks","areaStartPos":{"x":52,"y":-31},"areaScale":{"x":1,"y":1},"hasCollision":true},{"objectId":"stone-bricks/stone-bricks","areaStartPos":{"x":52,"y":-34},"areaScale":{"x":1,"y":1},"hasCollision":true},{"objectId":"stone-bricks/stone-bricks","areaStartPos":{"x":52,"y":-37},"areaScale":{"x":1,"y":1},"hasCollision":true},{"objectId":"stone-bricks/stone-bricks","areaStartPos":{"x":52,"y":-40},"areaScale":{"x":1,"y":1},"hasCollision":true},{"objectId":"stone-bricks/stone-bricks","areaStartPos":{"x":52,"y":-43},"areaScale":{"x":1,"y":1},"hasCollision":true},{"objectId":"stone-bricks/stone-bricks","areaStartPos":{"x":47,"y":-52},"areaScale":{"x":1,"y":9},"hasCollision":true},{"objectId":"stone-bricks/stone-bricks","areaStartPos":{"x":48,"y":-52},"areaScale":{"x":45,"y":1},"hasCollision":true},{"objectId":"stone-bricks/stone-bricks","areaStartPos":{"x":92,"y":-51},"areaScale":{"x":1,"y":9},"hasCollision":true},{"objectId":"stone_brick_pit","areaStartPos":{"x":54,"y":-42},"areaScale":{"x":34,"y":77},"hasCollision":false},{"objectId":"stone-bricks/stone-bricks","areaStartPos":{"x":88,"y":-42},"areaScale":{"x":1,"y":77},"hasCollision":true},{"objectId":"stone-bricks/stone-bricks","areaStartPos":{"x":89,"y":-38},"areaScale":{"x":27,"y":1},"hasCollision":true},{"objectId":"stone-bricks/stone-bricks","areaStartPos":{"x":93,"y":-43},"areaScale":{"x":23,"y":1},"hasCollision":true},{"objectId":"stone-bricks/stone-bricks","areaStartPos":{"x":55,"y":-46},"areaScale":{"x":1,"y":1},"hasCollision":true},{"objectId":"stone-bricks/stone-bricks","areaStartPos":{"x":62,"y":-49},"areaScale":{"x":1,"y":4},"hasCollision":true},{"objectId":"stone-bricks/stone-bricks","areaStartPos":{"x":61,"y":-46},"areaScale":{"x":1,"y":1},"hasCollision":true},{"objectId":"stone-bricks/stone-bricks","areaStartPos":{"x":61,"y":-49},"areaScale":{"x":1,"y":1},"hasCollision":true},{"objectId":"stone-bricks/stone-bricks","areaStartPos":{"x":70,"y":-45},"areaScale":{"x":4,"y":1},"hasCollision":true},{"objectId":"stone-bricks/stone-bricks","areaStartPos":{"x":78,"y":-47},"areaScale":{"x":2,"y":2},"hasCollision":true},{"objectId":"stone-bricks/stone-bricks","areaStartPos":{"x":65,"y":-48},"areaScale":{"x":4,"y":1},"hasCollision":true},{"objectId":"stone-bricks/stone-bricks","areaStartPos":{"x":84,"y":-45},"areaScale":{"x":1,"y":1},"hasCollision":true},{"objectId":"stone-bricks/stone-bricks","areaStartPos":{"x":76,"y":-45},"areaScale":{"x":1,"y":1},"hasCollision":true},{"objectId":"stone-bricks/stone-bricks","areaStartPos":{"x":116,"y":-43},"areaScale":{"x":11,"y":1},"hasCollision":true},{"objectId":"stone-bricks/stone-bricks","areaStartPos":{"x":126,"y":-42},"areaScale":{"x":1,"y":22},"hasCollision":true},{"objectId":"stone-bricks/stone-bricks","areaStartPos":{"x":116,"y":-38},"areaScale":{"x":1,"y":22},"hasCollision":true},{"objectId":"stone-bricks/stone-bricks","areaStartPos":{"x":116,"y":-16},"areaScale":{"x":18,"y":1},"hasCollision":true},{"objectId":"stone-bricks/stone-bricks","areaStartPos":{"x":127,"y":-21},"areaScale":{"x":7,"y":1},"hasCollision":true},{"objectId":"stone-bricks/stone-bricks","areaStartPos":{"x":134,"y":-26},"areaScale":{"x":1,"y":6},"hasCollision":true},{"objectId":"stone-bricks/stone-bricks","areaStartPos":{"x":134,"y":-16},"areaScale":{"x":7,"y":1},"hasCollision":true},{"objectId":"stone-bricks/stone-bricks","areaStartPos":{"x":140,"y":-27},"areaScale":{"x":1,"y":11},"hasCollision":true},{"objectId":"stone-bricks/stone-bricks","areaStartPos":{"x":138,"y":-18},"areaScale":{"x":3,"y":1},"hasCollision":true},{"objectId":"stone-bricks/stone-bricks","areaStartPos":{"x":138,"y":-21},"areaScale":{"x":2,"y":1},"hasCollision":true},{"objectId":"stone-bricks/stone-bricks","areaStartPos":{"x":135,"y":-24},"areaScale":{"x":3,"y":1},"hasCollision":true},{"objectId":"stone-bricks/stone-bricks","areaStartPos":{"x":134,"y":-27},"areaScale":{"x":4,"y":1},"hasCollision":true},{"objectId":"stone-bricks/stone-bricks","areaStartPos":{"x":141,"y":-27},"areaScale":{"x":20,"y":1},"hasCollision":true},{"objectId":"stone-bricks/stone-bricks","areaStartPos":{"x":134,"y":-30},"areaScale":{"x":27,"y":1},"hasCollision":true},{"objectId":"stone-bricks/stone-bricks","areaStartPos":{"x":161,"y":-35},"areaScale":{"x":1,"y":6},"hasCollision":true},{"objectId":"stone-bricks/stone-bricks","areaStartPos":{"x":161,"y":-27},"areaScale":{"x":20,"y":1},"hasCollision":true},{"objectId":"stone-bricks/stone-bricks","areaStartPos":{"x":180,"y":-36},"areaScale":{"x":1,"y":9},"hasCollision":true},{"objectId":"stone-bricks/stone-bricks","areaStartPos":{"x":161,"y":-36},"areaScale":{"x":19,"y":1},"hasCollision":true},{"objectId":"stone-bricks/stone-bricks-dark","areaStartPos":{"x":121,"y":-41},"areaScale":{"x":1,"y":3},"hasCollision":false},{"objectId":"stone-bricks/stone-bricks-dark","areaStartPos":{"x":121,"y":-38},"areaScale":{"x":1,"y":1},"hasCollision":false},{"objectId":"stone-bricks/stone-bricks-dark","areaStartPos":{"x":122,"y":-39},"areaScale":{"x":1,"y":1},"hasCollision":false},{"objectId":"stone-bricks/stone-bricks-dark","areaStartPos":{"x":120,"y":-39},"areaScale":{"x":1,"y":1},"hasCollision":false},{"objectId":"stone-bricks/stone-bricks","areaStartPos":{"x":134,"y":-29},"areaScale":{"x":1,"y":2},"hasCollision":true},{"objectId":"stone-bricks/stone-bricks","areaStartPos":{"x":-25,"y":0},"areaScale":{"x":18,"y":6},"hasCollision":true},{"objectId":"stone-bricks/stone-bricks","areaStartPos":{"x":-25,"y":-4},"areaScale":{"x":16,"y":4},"hasCollision":true},{"objectId":"stone-bricks/stone-bricks","areaStartPos":{"x":-25,"y":-5},"areaScale":{"x":16,"y":1},"hasCollision":false},{"objectId":"stone-bricks/stone-bricks","areaStartPos":{"x":-25,"y":-13},"areaScale":{"x":26,"y":8},"hasCollision":true},{"objectId":"stone-bricks/grass/stone-bricks-grass","areaStartPos":{"x":-37,"y":0},"areaScale":{"x":12,"y":1},"hasCollision":true},{"objectId":"stone-bricks/grass/stone-bricks-grass-top-left","areaStartPos":{"x":-38,"y":0},"areaScale":{"x":1,"y":1},"hasCollision":true},{"objectId":"stone-bricks/stone-bricks","areaStartPos":{"x":-38,"y":1},"areaScale":{"x":13,"y":5},"hasCollision":true},{"objectId":"stone_brick_pit","areaStartPos":{"x":-47,"y":0},"areaScale":{"x":9,"y":6},"hasCollision":true},{"objectId":"brick_grass","areaStartPos":{"x":-62,"y":-1},"areaScale":{"x":15,"y":7},"hasCollision":true},{"objectId":"stone-bricks/stone-bricks","areaStartPos":{"x":-29,"y":-6},"areaScale":{"x":4,"y":1},"hasCollision":true},{"objectId":"stone-bricks/stone-bricks","areaStartPos":{"x":-31,"y":-8},"areaScale":{"x":6,"y":2},"hasCollision":true},{"objectId":"stone-bricks/stone-bricks","areaStartPos":{"x":-33,"y":-12},"areaScale":{"x":8,"y":4},"hasCollision":true},{"objectId":"stone-bricks/stone-bricks","areaStartPos":{"x":-34,"y":-17},"areaScale":{"x":9,"y":5},"hasCollision":true},{"objectId":"null","areaStartPos":{"x":-62,"y":-11},"areaScale":{"x":1,"y":10},"hasCollision":true}],"dynamicObjects":[{"objectId":"title","position":{"x":170,"y":-32},"objectData":{}},{"objectId":"text_trigger","position":{"x":18,"y":-21},"objectData":{"text":"How can I possibly cross this gap?\\Maybe all I need is a running start!"}},{"objectId":"text_trigger","position":{"x":-4,"y":-1},"objectData":{"text":"Finally, I made it, Wickham should be here"}},{"objectId":"text_trigger","position":{"x":43,"y":-21},"objectData":{"text":"Whew! That was a lot!"}},{"objectId":"text_trigger","position":{"x":47,"y":-21},"objectData":{"text":"Up again??\\My knees can't handle these jumps for much longer..."}},{"objectId":"text_trigger","position":{"x":112,"y":-39},"objectData":{"text":"Guess I have to go down"}},{"objectId":"text_trigger","position":{"x":140,"y":-28},"objectData":{"text":"Last hallway, I'm coming Wickham!"}},{"objectId":"text_trigger","position":{"x":163,"y":-28},"objectData":{"text":"You made it to the end!\\Thanks for playing!"}},{"objectId":"flower_blue","position":{"x":-55,"y":-2},"objectData":{}},{"objectId":"checkpoint","position":{"x":-35,"y":-1},"objectData":{}}]}
-    ]
+    let levels: Array<SerializedWorld> = data.levels as Array<SerializedWorld>
 
     const queryString = window.location.search;
     const urlParams = new URLSearchParams(queryString);
@@ -767,21 +881,11 @@ function startLevelLoad() {
 
     document.title = urlParams.get("map") ? "Custom Map" : "Campaign"
 
-    if (worldJson?.levelOptions) {
-        app.addObject(new Engine.GameObjectBuilder(app)
-            .addComponent(new Backdrop(worldJson.levelOptions.background))
-            .build())
-    } else {
-        app.addObject(new Engine.GameObjectBuilder(app)
-            .addComponent(new CloudRenderer())
-            .build())
-    }
-
     player = new Engine.GameObjectBuilder(app)
         .addComponent(new Engine.Sprite("/src/assets/mario.png"))
         .addComponent(new Engine.Renderer(app.ctx))
         .addComponent(new Engine.Transform(playerSpawnPosition, 0, {x:12, y:16}))
-        .addComponent(new Engine.BoxCollider({x: 12, y: 15}, {x:0, y:1}, false))
+        .addComponent(new Engine.BoxCollider({x: 12, y: 16}, {x:0, y:0}, false))
         .addComponent(new PlayerAnimator())
         .addComponent(new Engine.Rigidbody({
             bounciness: 0,
@@ -806,6 +910,16 @@ function startLevelLoad() {
         .addComponent(new Engine.Camera())
         .addComponent(new CameraController(playerTransform))
         .build()
+
+    if (worldJson?.levelOptions) {
+        app.addObject(new Engine.GameObjectBuilder(app)
+            .addComponent(new Backdrop(worldJson.levelOptions.background))
+            .build())
+    } else {
+        app.addObject(new Engine.GameObjectBuilder(app)
+            .addComponent(new CloudRenderer())
+            .build())
+    }
 
     loadWorldFromJson(worldJson as SerializedWorld, app, 16)
 
