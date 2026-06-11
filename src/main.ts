@@ -5,20 +5,10 @@ import * as Game from "./game.ts";
 import * as Editor from "./editor.ts";
 import * as Title from "./title.ts";
 
-// Overwrite setInterval to cache ids
-
-console.log(chalk.black(`
-┌-------------------------------------------------------┐
-|                    ${chalk.bold("Super Mr. Bennet")}                   |
-|           ${chalk.italic("By Nathan Le and Tristan Greenhagen")}         |
-└-------------------------------------------------------┘
-`));
-
-console.log(chalk.italic("Based on works by Nintendo and Jane Austen"))
-
 console.log(`
 ${chalk.bold("Debug Keybinds")}
-${chalk.italic("alt+g")} | Show Hitboxes
+${chalk.italic("ALT+H")} | Show Hitboxes
+${chalk.italic("ALT+R")} | Reset
 `)
 
 const sceneManager = new Engine.SceneManager();
