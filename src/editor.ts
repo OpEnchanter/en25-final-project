@@ -165,7 +165,7 @@ class EditorRenderer extends Engine.ComponentBase {
 
                     this.isDragging = scene.staticObjects.indexOf(o) == selectedStaticObject
                     this.offset = {x:(wp.x - o.areaStartPos.x * 16), y:(wp.y - o.areaStartPos.y * 16)}
-                    if (mouseNearResize) {
+                    if (mouseNearResize && this.isDragging) {
                         this.isDragging = false;
                         this.isResizing = true;
                     }
@@ -390,65 +390,40 @@ class MenuController extends Engine.ComponentBase {
                 updateSidebar();
             }
         }, {signal: app?.abortSignal})
-    }
-}
 
-document.getElementById("exportLevelButton")?.addEventListener("click", (e) => {
-    console.log("Exporting")
-    const exportedTextArea = document.getElementById("export");
-    if (!exportedTextArea) return;
-    exportedTextArea.value = JSON.stringify(scene);
-})
+        document.getElementById("exportLevelButton")?.addEventListener("click", (e) => {
+            console.log("Exporting")
+            const exportedTextArea = document.getElementById("export");
+            if (!exportedTextArea) return;
+            exportedTextArea.value = JSON.stringify(scene);
+        })
 
-document.getElementById("importLevelButton")?.addEventListener("click", (e) => {
-    console.log("Importing")
-    const exportedTextArea = document.getElementById("export");
-    if (!exportedTextArea) return;
-    scene = JSON.parse(exportedTextArea.value as string);
-})
+        document.getElementById("importLevelButton")?.addEventListener("click", (e) => {
+            console.log("Importing")
+            const exportedTextArea = document.getElementById("export");
+            if (!exportedTextArea) return;
+            scene = JSON.parse(exportedTextArea.value as string);
+        })
 
-document.getElementById("playtestButton")?.addEventListener("click", (e) => {
-    console.log("Playtesting")
-    const exportedTextArea = document.getElementById("export");
-    if (!exportedTextArea) return;
-    window.open(`/?map=${encodeURIComponent(JSON.stringify([scene]))}`)
-})
+        document.getElementById("playtestButton")?.addEventListener("click", (e) => {
+            console.log("Playtesting")
+            const exportedTextArea = document.getElementById("export");
+            if (!exportedTextArea) return;
+            const url = new URL(window.location.href);
+            url.searchParams.set("playtest", "true");
+            window.history.replaceState(null, '', url)
+            localStorage.setItem("playtestMap", JSON.stringify([scene]))
 
-let menuOpen = false;
-function updateSidebar() {
-    for (const elem of document.querySelectorAll(".sidebar")) {
-        (elem as HTMLElement).style.transform = menuOpen ? "translateX(0%)" : "translateX(100%)";
-    }
-
-    const levelExport = document.querySelector(".exportedLevel") as HTMLElement
-    if (!levelExport) return
-    levelExport.style.transform = menuOpen ? "translateX(0%)" : "translateX(calc(-100% - 24px))";
-
-    const sceneOptions = document.querySelector(".sceneOptions") as HTMLElement
-    sceneOptions.style.transform = menuOpen ? "translateX(0%)" : "translateX(calc(-100% - 24px))";
-}
-
-let scene: SerializedWorld = {
-    staticObjects: [],
-    dynamicObjects: []
-}
-
-let selectedStaticObject: number = -1;
-let selectedDynamicObject: number = -1;
-
-let app: Engine.App | undefined = undefined;
-
-export class Scene extends Engine.Scene {
-    private intervalId: any = undefined;
-    override load(globalApp: Engine.App): void {
-        const parser = new DOMParser();
-        document.body.querySelector(".content")?.appendChild(parser.parseFromString(EditorHtml, "text/html").querySelector(".overlays"))
-
-        app = globalApp;
-        app.options.downscaleFactor = 2;
+            app?.sceneManager.loadScene("game", app);
+        })
 
         document.getElementById("gameButton")?.addEventListener("click", () => {
             console.log("Loading Game")
+            const url = new URL(window.location.href);
+            url.searchParams.delete("playtest")
+            window.history.replaceState(null, '', url)
+            localStorage.setItem("playtestMap", JSON.stringify([scene]))
+
             app?.sceneManager.loadScene("game", app);
         }, {signal: app?.abortSignal})
 
@@ -456,6 +431,12 @@ export class Scene extends Engine.Scene {
         const tilesetPicker = document.getElementById("tilesetList");
         const objectPicker = document.getElementById("dynamicObjectList");
 
+        if (!tilePicker || !tilesetPicker || !objectPicker) return
+        tilePicker.innerHTML = "";
+        tilesetPicker.innerHTML = "";
+        objectPicker.innerHTML = "";
+
+        console.log("Adding tiles to picker")
         for (const t of tiles) {
             tilePicker?.appendChild((()=>{
                 const e = document.createElement("label");
@@ -559,6 +540,41 @@ export class Scene extends Engine.Scene {
                 return e;
             })())
         }
+    }
+}
+
+let menuOpen = false;
+function updateSidebar() {
+    for (const elem of document.querySelectorAll(".sidebar")) {
+        (elem as HTMLElement).style.transform = menuOpen ? "translateX(0%)" : "translateX(100%)";
+    }
+
+    const levelExport = document.querySelector(".exportedLevel") as HTMLElement
+    if (!levelExport) return
+    levelExport.style.transform = menuOpen ? "translateX(0%)" : "translateX(calc(-100% - 24px))";
+
+    const sceneOptions = document.querySelector(".sceneOptions") as HTMLElement
+    sceneOptions.style.transform = menuOpen ? "translateX(0%)" : "translateX(calc(-100% - 24px))";
+}
+
+let scene: SerializedWorld = {
+    staticObjects: [],
+    dynamicObjects: []
+}
+
+let selectedStaticObject: number = -1;
+let selectedDynamicObject: number = -1;
+
+let app: Engine.App | undefined = undefined;
+
+export class Scene extends Engine.Scene {
+    private intervalId: any = undefined;
+    override load(globalApp: Engine.App): void {
+        const parser = new DOMParser();
+        document.body.querySelector(".content")?.appendChild(parser.parseFromString(EditorHtml, "text/html").querySelector(".overlays"))
+
+        app = globalApp;
+        app.options.downscaleFactor = 2;
 
         for (const tile of tiles) {
             tileImageCache[tile] = new window.Image();
@@ -598,7 +614,15 @@ export class Scene extends Engine.Scene {
             app.options.downscaleFactor = 2 * (window.innerHeight / 665)
         }, 500);
 
-        scene = urlParams.get("map") ? JSON.parse(decodeURI(urlParams.get("map") as string)) : scene
+        if (urlParams.get("map")) {
+            const uriLevelData = JSON.parse(decodeURIComponent(urlParams.get("map") as string))
+            scene = uriLevelData[0]
+        } else if (localStorage.getItem("playtestMap")) {
+            const localStorageLevelData = JSON.parse(localStorage.getItem("playtestMap") as string)
+            scene = localStorageLevelData
+        }
+
+        console.log(scene);
 
         app.addObject(new Engine.GameObjectBuilder(app)
             .addComponent(new Engine.Transform({x: -64-app.viewportScale.x/2, y: -24-app.viewportScale.y/2}, 0, {x: 0, y: 0}))

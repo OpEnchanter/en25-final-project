@@ -176,7 +176,6 @@ export class BoxCollider extends ComponentBase {
     }
 
     override onInitialized(): void {
-        console.log("INIT")
         this.transform = this.object?.getComponents(Transform)[0] as Transform;
         if (!this.object) return
         for (const o of this.object?.app.objects) {

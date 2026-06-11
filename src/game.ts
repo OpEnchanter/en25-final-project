@@ -456,7 +456,6 @@ class Checkpoint extends Engine.ComponentBase {
         this.lastFrameSide = this.playerSide;
         this.rotationVelocity += (0 - this.deg) / 10;
         this.rotationVelocity *= 0.95
-        console.log(this.rotationVelocity);
     }
 }
 
@@ -482,6 +481,10 @@ class NextLevelTrigger extends Engine.ComponentBase {
 
         if (this.triggered && !this.triggeredOld) {
             levelIndex++;
+
+            if (!(new URL(window.location.href).searchParams.has("playtest"))) {
+                localStorage.setItem("campaignLevelIndex", levelIndex.toString())
+            }
 
             playerSpawnPosition = { x: -64, y: -24 };
 
@@ -740,7 +743,6 @@ class BlankScreenDialogue extends Engine.ComponentBase {
         this.writeSpeed = this.shiftPressed ? 0.5 : 1.5
 
         if (this.pages.length !== 0) {
-            console.log("DRAWING")
             const splicedText = this.pages?.[this.pageIdx].slice(0, Math.floor(this.t));
 
             if (splicedText.length === this.pages[this.pageIdx]?.length && this.spacePressed) {
@@ -750,6 +752,10 @@ class BlankScreenDialogue extends Engine.ComponentBase {
                 } else {
                     this.pages = [];
                     levelIndex++;
+
+                    if (!(new URL(window.location.href).searchParams.has("playtest"))) {
+                        localStorage.setItem("campaignLevelIndex", levelIndex.toString())
+                    }
 
                     playerSpawnPosition = { x: -64, y: -24 };
 
@@ -782,6 +788,7 @@ class PauseMenu extends Engine.ComponentBase {
 
     private buttons: Record<string, ()=>void> = {
         "Editor": ()=>{app?.sceneManager.loadScene("editor", app)},
+        "Edit Level": ()=>{console.log(JSON.stringify(levels[levelIndex])); localStorage.setItem("playtestMap", JSON.stringify(levels[levelIndex])); app?.sceneManager.loadScene("editor", app);},
         "Quit": ()=>{}
     }
 
@@ -828,7 +835,7 @@ class PauseMenu extends Engine.ComponentBase {
 
         let anyIsHovered = false;
 
-        console.log(this.menuOpen)
+        app.ctx.font = "7px 'PressStart2P'"
 
         for (let i = 0; i < Object.keys(this.buttons).length; i++) {
             const btnCurve = this.menuOpen ? 1/2**((this.t-7.228-(i*3))) : ((-1/2)**(this.t-7.228-(i*3))) - 150
@@ -883,7 +890,6 @@ function loadWorldFromJson(world: SerializedWorld, app: Engine.App, tileScale: n
         if (object.objectId !== 'null' && Object.keys(tileset)) {
             const isTileset = Object.keys(tileset).includes(object.objectId) ? true : false;
             let spriteSrc = isTileset ? "" : `assets/tiles/${object.objectId}.png`
-            console.log(spriteSrc)
             for (let b = 0; b < k.x; b++) {
                 for (let i = 0; i < k.y; i++) {
                     if (isTileset) {
@@ -900,9 +906,7 @@ function loadWorldFromJson(world: SerializedWorld, app: Engine.App, tileScale: n
                         const pos = { x: b, y: i };
 
                         if (corners.some(corner => corner.x == pos.x && corner.y == pos.y)) {
-                            console.log("CORNER")
                             tileType = cornerTilesetPositions[corners.findIndex(corner => corner.x == pos.x && corner.y == pos.y)];
-                            console.log(corners.findIndex(corner => corner.x == pos.x && corner.y == pos.y))
                         } else {
                             tileType = pos.x === 0 ? { x: 0, y: 1 } : tileType;
                             tileType = pos.x === k.x ? { x: 2, y: 1 } : tileType;
@@ -937,19 +941,26 @@ function loadWorldFromJson(world: SerializedWorld, app: Engine.App, tileScale: n
 }
 
 let app: Engine.App | undefined = undefined;
+let levels: Array<SerializedWorld> = data.levels as Array<SerializedWorld>
 
 function startLevelLoad() {
     if (!app) return;
     app.objects = [];
-    let levels: Array<SerializedWorld> = data.levels as Array<SerializedWorld>
 
     const queryString = window.location.search;
     const urlParams = new URLSearchParams(queryString);
 
-
-    if (urlParams.get("map")) {
-        const uriLevelData = JSON.parse(decodeURIComponent(urlParams.get("map") as string))
-        levels = uriLevelData
+    console.log(localStorage.getItem("campaignLevelIndex"))
+    if (urlParams.get("playtest") == "true") {
+        if (urlParams.get("map")) {
+            const uriLevelData = JSON.parse(decodeURIComponent(urlParams.get("map") as string))
+            levels = uriLevelData
+        } else if (localStorage.getItem("playtestMap")) {
+            const localStorageLevelData = JSON.parse(localStorage.getItem("playtestMap") as string)
+            levels = localStorageLevelData
+        }
+    } else if (localStorage.getItem("campaignLevelIndex")) {
+        levelIndex = parseInt(localStorage.getItem("campaignLevelIndex") as string)
     }
 
     const worldJson = levels[levelIndex]
