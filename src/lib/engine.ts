@@ -402,10 +402,10 @@ export class PlayerController extends ComponentBase {
     private rigidbody: Rigidbody | null = null;
     override onInitialized(): void {
         document.body.addEventListener('keydown', (e) => {
-            this.keys[e.key] = true;
+            this.keys[e.key.toLowerCase()] = true;
         }, { signal: this.object?.app.abortSignal })
         document.body.addEventListener('keyup', (e) => {
-            this.keys[e.key] = false;
+            this.keys[e.key.toLowerCase()] = false;
         }, { signal: this.object?.app.abortSignal })
         this.transform = this.object?.getComponents(Transform)[0] as Transform;
         this.rigidbody = this.object?.getComponents(Rigidbody)[0] as Rigidbody;
