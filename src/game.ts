@@ -787,9 +787,8 @@ class PauseMenu extends Engine.ComponentBase {
     private t: number = 0;
 
     private buttons: Record<string, ()=>void> = {
-        "Editor": ()=>{app?.sceneManager.loadScene("editor", app)},
-        "Edit Level": ()=>{console.log(JSON.stringify(levels[levelIndex])); localStorage.setItem("playtestMap", JSON.stringify(levels[levelIndex])); app?.sceneManager.loadScene("editor", app);},
-        "Quit": ()=>{}
+        "Edit Level": ()=>{console.log(JSON.stringify(levels[levelIndex])); localStorage.setItem("playtestMap", JSON.stringify([levels[levelIndex]])); app?.sceneManager.loadScene("editor", app);},
+        "Quit": ()=>{app?.sceneManager.loadScene("title", app)}
     }
 
     private mPos: Engine.vector = {x:0, y:0};
@@ -852,17 +851,21 @@ class PauseMenu extends Engine.ComponentBase {
 
             // Render
             if (isHovered) {
-                const gradient = app.ctx.createLinearGradient(0, 0, Math.cos(this.t / 24) * 80, Math.sin(this.t / 24) * 80)
+                const gradient = app.ctx.createLinearGradient(bPos.x+40-(Math.sin(this.t/40)*100), bPos.y+5, 1, 0)
                 gradient.addColorStop(0, "#0095e9")
                 gradient.addColorStop(0.5, "#124e89")
                 app.ctx.fillStyle = gradient
-                app.ctx.fillRect(bPos.x-1, bPos.y-1, bScale.x+2, bScale.y+2)
+                app.ctx.beginPath()
+                app.ctx.roundRect(bPos.x-1, bPos.y-1, bScale.x+2, bScale.y+2, 3)
+                app.ctx.fill()
             }
 
             app.ctx.fillStyle = isHovered ? "#5a6988" : "#8b9bb4"
-            app.ctx.fillRect(bPos.x, bPos.y, bScale.x, bScale.y)
+            app.ctx.beginPath()
+            app.ctx.roundRect(bPos.x, bPos.y, bScale.x, bScale.y, 2)
+            app.ctx.fill()
 
-            app.ctx.fillStyle = "black"
+            app.ctx.fillStyle = isHovered ? "#b0c3e2" : "#1c212b"
             app.ctx.fillText(Object.keys(this.buttons)[i] as string, bPos.x + 4, bPos.y + 10)
 
             this.oldHovered = isHovered ? true : this.oldHovered

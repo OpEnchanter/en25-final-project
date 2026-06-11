@@ -417,14 +417,14 @@ class MenuController extends Engine.ComponentBase {
             app?.sceneManager.loadScene("game", app);
         })
 
-        document.getElementById("gameButton")?.addEventListener("click", () => {
+        document.getElementById("quitButton")?.addEventListener("click", () => {
             console.log("Loading Game")
             const url = new URL(window.location.href);
             url.searchParams.delete("playtest")
             window.history.replaceState(null, '', url)
             localStorage.setItem("playtestMap", JSON.stringify([scene]))
 
-            app?.sceneManager.loadScene("game", app);
+            app?.sceneManager.loadScene("title", app);
         }, {signal: app?.abortSignal})
 
         const tilePicker = document.getElementById("tileList");
@@ -617,9 +617,9 @@ export class Scene extends Engine.Scene {
         if (urlParams.get("map")) {
             const uriLevelData = JSON.parse(decodeURIComponent(urlParams.get("map") as string))
             scene = uriLevelData[0]
-        } else if (localStorage.getItem("playtestMap")) {
+        } else if (JSON.parse(localStorage.getItem("playtestMap") as string)) {
             const localStorageLevelData = JSON.parse(localStorage.getItem("playtestMap") as string)
-            scene = localStorageLevelData
+            scene = localStorageLevelData[0]
         }
 
         console.log(scene);

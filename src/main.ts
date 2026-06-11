@@ -3,6 +3,7 @@ import chalk from "chalk";
 
 import * as Game from "./game.ts";
 import * as Editor from "./editor.ts";
+import * as Title from "./title.ts";
 
 // Overwrite setInterval to cache ids
 
@@ -27,5 +28,6 @@ const app: Engine.App = new Engine.App(sceneManager, {
 
 sceneManager.addScene(new Game.Scene(), "game");
 sceneManager.addScene(new Editor.Scene(), "editor");
+sceneManager.addScene(new Title.Scene(), "title");
 
-sceneManager.loadScene("game", app);
+sceneManager.loadScene("title", app);
