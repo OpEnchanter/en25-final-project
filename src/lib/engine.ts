@@ -313,6 +313,7 @@ export class Rigidbody extends ComponentBase {
                 anyFloorCol = true;
             }
         }
+
         if (anyFloorCol === false) {
             this.velocity = {x:this.velocity.x, y:(this.velocity.y+0.1)};
         }
@@ -354,6 +355,7 @@ export class Rigidbody extends ComponentBase {
             } else if (this.object?.isColliding && this.object.isCollidingOld) {
                 this.velocity.x *= (-1*((1-this.bodyProps.friction)*b.x) + 1)
                 this.velocity.y *= (-1*((1-this.bodyProps.friction)*b.y) + 1)
+                console.log(b.x)
 
                 const a = vMath.normalize(this.velocity);
                 
@@ -400,6 +402,8 @@ export class PlayerController extends ComponentBase {
     keys: any = {};
     private transform: Transform | null = null;
     private rigidbody: Rigidbody | null = null;
+    private lastGroundedFrame = 0;
+    private t = 0;
     override onInitialized(): void {
         document.body.addEventListener('keydown', (e) => {
             this.keys[e.key.toLowerCase()] = true;
@@ -412,20 +416,36 @@ export class PlayerController extends ComponentBase {
     }
 
     override onUpdate(): void {
-        const onGround = this.object?.collisionData[0]?.collisionNormal.y == -1
-        const canJump = (this.object?.isColliding && onGround)
+        const isGroundNormal = this.object?.collisionData[0]?.collisionNormal.y == -1
+        const onGround = (this.object?.isColliding && isGroundNormal)
+        this.lastGroundedFrame = onGround ? this.t : this.lastGroundedFrame
+        const canJump = (this.t - this.lastGroundedFrame) < 6
         if (this.transform && this.rigidbody) {
             if (this.keys["w"] && canJump) {
                 this.transform.position = {x: this.transform?.position.x, y: (this.transform?.position.y as number)-1}
                 this.rigidbody.velocity = {x: this.rigidbody?.velocity.x, y: this.rigidbody.velocity.y-4}
+                this.lastGroundedFrame = 0;
             }
+            
+            const leftCol = this.object?.triggerData.some(col => {
+                if (!col.object?.getComponents(Transform) || !this.transform) return false;
+                const ot: Transform = (col.object?.getComponents(Transform)[0] as Transform)
+                return ot.position.x < this.transform.position.x
+            })
+            const rightCol = this.object?.triggerData.some(col => {
+                if (!col.object?.getComponents(Transform) || !this.transform) return false;
+                const ot: Transform = (col.object?.getComponents(Transform)[0] as Transform)
+                return ot.position.x > this.transform.position.x
+            })
 
-            if (this.keys["a"]) {
-                this.rigidbody.velocity = {x: this.rigidbody?.velocity.x-0.1, y: this.rigidbody.velocity.y}
-            } else if (this.keys["d"]) {
-                this.rigidbody.velocity = {x: this.rigidbody?.velocity.x+0.1, y: this.rigidbody.velocity.y}
+            const playerMovementSpeed = onGround ? 0.3 : 0.1
+            if (this.keys["a"] && !leftCol) {
+                this.rigidbody.velocity = {x: this.rigidbody?.velocity.x-playerMovementSpeed, y: this.rigidbody.velocity.y}
+            } else if (this.keys["d"] && !rightCol) {
+                this.rigidbody.velocity = {x: this.rigidbody?.velocity.x+playerMovementSpeed, y: this.rigidbody.velocity.y}
             }
         }
+        this.t++;
     }
 }
 

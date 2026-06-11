@@ -87,10 +87,10 @@ const dynamicObjectFunctions: Record<string, (position: Engine.vector, tileScale
             .addComponent(new Engine.Transform({ x: tileScale * position.x, y: tileScale * position.y }, 0, { x: tileScale, y: tileScale }))
             .addComponent(new Engine.Sprite("assets/tiles/enemy/animation/walking/1.png"))
             .addComponent(new Engine.Renderer(app.ctx))
-            .addComponent(new Engine.BoxCollider({ x: 1, y: 8 }, { x: -9, y: 2 }, true))
-            .addComponent(new Engine.BoxCollider({ x: 1, y: 8 }, { x: 9, y: 2 }, true))
-            .addComponent(new Engine.BoxCollider({ x: 16, y: 1 }, { x: 0, y: -11 }, true))
-            .addComponent(new Engine.BoxCollider({ x: 16, y: 16 }, { x: 0, y: 0 }, false))
+            .addComponent(new Engine.BoxCollider({ x: 1, y: 8 }, { x: -11, y: 2 }, true))
+            .addComponent(new Engine.BoxCollider({ x: 1, y: 8 }, { x: 11, y: 2 }, true))
+            .addComponent(new Engine.BoxCollider({ x: 14, y: 1 }, { x: 0, y: -11 }, true))
+            .addComponent(new Engine.BoxCollider({ x: 14, y: 16 }, { x: 0, y: 0 }, false))
             .addComponent(new Engine.Rigidbody({ bounciness: 0, friction: 1, drag: 1 } as Engine.BodyProperties))
             .addComponent(new Enemy())
             .build())
@@ -624,15 +624,21 @@ class Enemy extends Engine.ComponentBase {
             } else if (isHorizontal) {
                 this.playerHeathController.kill();
             }
-        } else {
-            this.vel *= -1;
-            this.transform.position.x += this.vel
         }
+        const ot = params.object?.getComponents(Engine.Transform)[0] as Engine.Transform
+        if (this.vel === -1 && (ot.position.x < this.transform.position.x)) {
+            this.vel = 1;
+        } else if (this.vel === 1 && (ot.position.x > this.transform.position.x)) {
+            this.vel = -1;
+        }
+        this.transform.position.x += this.vel
     }
 
     override onTriggerStay(params: Engine.TriggerData): void {
         if (!this.transform || !this.rigidbody || !this.playerTransform || !this.playerHeathController || !this.playerRb) return
         if (this.vel == 0) return
+        const ot = params.object?.getComponents(Engine.Transform)[0] as Engine.Transform
+        this.vel = (this.transform.position.x - ot.position.x) / Math.abs(this.transform.position.x - ot.position.x)
         if (params.object === player) {
             const isHorizontal = this.playerTransform.position.x < (this.transform.position.x - 8) || this.playerTransform.position.x > (this.transform.position.x + 8);
             if (this.playerTransform.position.y <= this.transform.position.y - 14) {
@@ -974,11 +980,12 @@ function startLevelLoad() {
         .addComponent(new Engine.Sprite("assets/mario.png"))
         .addComponent(new Engine.Renderer(app.ctx))
         .addComponent(new Engine.Transform(playerSpawnPosition, 0, { x: 12, y: 16 }))
+        .addComponent(new Engine.BoxCollider({ x: 14, y: 14 }, { x: -0.5, y: 0 }, true))
         .addComponent(new Engine.BoxCollider({ x: 12, y: 16 }, { x: 0, y: 0 }, false))
         .addComponent(new PlayerAnimator())
         .addComponent(new Engine.Rigidbody({
             bounciness: 0,
-            friction: 0.975,
+            friction: 0.93,
             drag: 0.98,
             density: 1
         }))
