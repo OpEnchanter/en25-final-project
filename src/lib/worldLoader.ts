@@ -110,6 +110,16 @@ export const loadDynamicObjects: (inputs: DynamicObjectInputs)=>Record<string, (
                 .addComponent(new Grass(inputs.playerTransform, windNoise))
                 .build())
         },
+        "balloon": (app: Engine.App, position: Engine.vector, tileScale: number, objectData: any) => {
+            return (new Engine.GameObjectBuilder(app)
+                .addComponent(new Engine.Transform({ x: tileScale * position.x, y: tileScale * position.y }, 0, { x: tileScale * 6, y: tileScale * 8 }))
+                .addComponent(new Engine.Sprite("assets/tiles/balloon/1.png"))
+                .addComponent(new Engine.Renderer(app.ctx))
+                .addComponent(new Engine.BoxCollider({ x: 32, y: 10 }, { x: 0, y: 49 }, false))
+                .addComponent(new Engine.Rigidbody({ bounciness: 0, friction: 1, drag: 1 } as Engine.BodyProperties))
+                .addComponent(new Balloon())
+                .build())
+        },
     });
 };
 
@@ -846,6 +856,49 @@ export class Grass extends Engine.ComponentBase {
 
             this.object.app.ctx.fill()
         }
+        this.t++;
+    }
+}
+
+export class Balloon extends Engine.ComponentBase {
+    t: number = 0;
+    anim: Array<HTMLImageElement> = []
+
+    sprite: Engine.Sprite | undefined = undefined;
+    transform: Engine.Transform | undefined = undefined;
+    rigidbody: Engine.Rigidbody | undefined = undefined;
+
+    targetY: number = 0;
+
+    getAnimFrame(frame: number) {
+        const img = new window.Image() as HTMLImageElement;
+        img.src = `/assets/tiles/balloon/${frame}.png`
+        return img
+    }
+    
+    override onInitialized(): void {
+        for (let x = 1; x<5; x++) {
+            this.anim.push(this.getAnimFrame(x))
+        }
+
+        this.sprite = this.object?.getComponents(Engine.Sprite)[0] as Engine.Sprite;
+        this.transform = this.object?.getComponents(Engine.Transform)[0] as Engine.Transform;
+        this.rigidbody = this.object?.getComponents(Engine.Rigidbody)[0] as Engine.Rigidbody;
+
+        this.targetY = this.transform.position.y;
+        this.transform.position.y += 3
+    }
+
+    override onUpdate(): void {
+        if (!this.sprite || !this.transform || !this.rigidbody) return
+
+        if (this.transform.position.y > this.targetY) {
+            this.rigidbody.velocity.y -= ((this.transform.position.y + 96) / this.targetY);
+        } else {
+            this.rigidbody.velocity.y -= 0.06;
+        }
+
+        this.sprite.texture = this.anim[Math.ceil(this.t / 5) % 4]
         this.t++;
     }
 }
