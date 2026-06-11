@@ -224,7 +224,7 @@ function startLevelLoad() {
     document.title = urlParams.get("map") ? "Custom Map" : "Campaign"
 
     player = new Engine.GameObjectBuilder(app)
-        .addComponent(new Engine.Sprite("assets/mario.png"))
+        .addComponent(new Engine.Sprite("assets/bennet/standing.png"))
         .addComponent(new Engine.Renderer(app.ctx))
         .addComponent(new Engine.Transform(playerSpawnPosition, 0, { x: 12, y: 16 }))
         .addComponent(new Engine.BoxCollider({ x: 14, y: 14 }, { x: -0.5, y: 0 }, true))
