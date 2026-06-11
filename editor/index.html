@@ -1,42 +1,36 @@
-<!DOCTYPE html>
-<html>
-    <head>
-        <link rel="stylesheet" href="/src/index.css">
-        <link rel="stylesheet" href="/src/editor.css"> 
-        <title>Editor</title>
-    </head>
-    <body>
-        <button class="menuButton" id="menuButton">
-            <img src="/src/web/menu.svg">
-        </button>
-        <div class="exportedLevel">
-            <textarea id="export" placeholder="Put text here for imports or copy text from here for exports"></textarea>
+<div class="overlays">
+    <button class="menuButton" id="menuButton">
+        <img src="/src/web/menu.svg">
+    </button>
+    <div class="exportedLevel">
+        <textarea id="export" placeholder="Put text here for imports or copy text from here for exports"></textarea>
+    </div>
+    <div class="sceneOptions">
+        <label class="propContainer">
+            <span>BG</span>
+            <input type="text">
+        </label>
+    </div>
+    <div class="objectSelector sidebar" id="sidebar">
+        <div class="buttonSection">
+            <button id="exportLevelButton">Export Level</button>
+            <button id="importLevelButton">Import Level</button>
         </div>
-        <div class="sceneOptions">
-            <label class="propContainer">
-                <span>BG</span>
-                <input type="text">
-            </label>
+        <div class="buttonSection">
+            <button id="playtestButton">Playtest</button>
         </div>
-        <div class="objectSelector sidebar" id="sidebar">
-            <div class="buttonSection">
-                <button id="exportLevelButton">Export Level</button>
-                <button id="importLevelButton">Import Level</button>
-            </div>
-            <div class="buttonSection">
-                <button id="playtestButton">Playtest</button>
-            </div>
-            <h2>Tiles</h2>
-            <div id="tileList" class="tilePicker"></div>
-            <h2>Tilesets</h2>
-            <div id="tilesetList" class="tilePicker"></div>
-            <h2>Dynamic Objects</h2>
-            <div id="dynamicObjectList" class="tilePicker"></div>
+        <div class="buttonSection">
+            <button id="gameButton">Return to Game</button>
         </div>
-        <div class="objectProperties sidebar" id="sidebar">
-            <h2>Properties</h2>
-            <div id="objectProps"></div>
-        </div>
-        <script type="module" src="/src/editor.ts"></script>
-    </body>
-</html>
+        <h2>Tiles</h2>
+        <div id="tileList" class="tilePicker"></div>
+        <h2>Tilesets</h2>
+        <div id="tilesetList" class="tilePicker"></div>
+        <h2>Dynamic Objects</h2>
+        <div id="dynamicObjectList" class="tilePicker"></div>
+    </div>
+    <div class="objectProperties sidebar" id="sidebar">
+        <h2>Properties</h2>
+        <div id="objectProps"></div>
+    </div>
+</div>

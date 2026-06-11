@@ -404,10 +404,10 @@ export class PlayerController extends ComponentBase {
     override onInitialized(): void {
         document.body.addEventListener('keydown', (e) => {
             this.keys[e.key] = true;
-        })
+        }, { signal: this.object?.app.abortSignal })
         document.body.addEventListener('keyup', (e) => {
             this.keys[e.key] = false;
-        })
+        }, { signal: this.object?.app.abortSignal })
         this.transform = this.object?.getComponents(Transform)[0] as Transform;
         this.rigidbody = this.object?.getComponents(Rigidbody)[0] as Rigidbody;
     }
@@ -570,6 +570,42 @@ type ApplicationOptions = {
     downscaleFactor?: number
 }
 
+export class Scene {
+    public load(app: App) {}
+    public unload() {}
+}
+
+let intervalIds: Array<number> = []
+
+function clearIntervalAll(): void {
+    intervalIds.forEach(i => {
+        clearInterval(i)
+    });
+    intervalIds = [];
+}
+
+export class SceneManager {
+    private scenes: Record<string, Scene> = {};
+    private curScene: string = "";
+
+    public addScene(scene: Scene, name: string) {
+        this.scenes[name] = scene
+    }
+
+    public loadScene(name: string, app: App) {
+        if (this.curScene !== "") this.scenes[this.curScene]?.unload();
+        app.stop()
+
+        clearIntervalAll();
+        document.querySelector(".overlays")?.remove();
+        app.objects = [];
+
+
+        this.scenes[name]?.load(app)
+        this.curScene = name;
+    } 
+}
+
 export class App {
     public objects: Array<GameObject> = [];
     canvas: HTMLCanvasElement;
@@ -579,7 +615,13 @@ export class App {
 
     options: ApplicationOptions;
 
+    public sceneManager: SceneManager;
+
     intervalId: any = null;
+
+    intervalIds: Array<number>;
+    abortSignal: any;
+    abortController: any;
 
     public renderingClippingPlane: {
         position: vector,
@@ -591,11 +633,17 @@ export class App {
     lastClientScale: vector = {x:0, y:0}
     lastDownscaleFactor: number = 1
 
-    constructor (options?: ApplicationOptions) {
+    constructor (sceneManager: SceneManager, options?: ApplicationOptions) {
+        this.intervalIds = intervalIds;
+        this.abortController = new AbortController();;
+        const { signal } = this.abortController;
+        this.abortSignal = signal;
         this.options = options ? options : {
             downscaleFactor: 1
         };
-        this.canvas = document.body.appendChild((()=>{
+        this.sceneManager = sceneManager;
+        const canvasParent = document.body.querySelector(".content") != null ? document.body.querySelector(".content") : document.body;
+        this.canvas = canvasParent.appendChild((()=>{
             const canvas = document.createElement("canvas");
             canvas.id = "canvas";
             return canvas;
@@ -628,10 +676,13 @@ export class App {
     }
 
     stop() {
-        if (this.intervalId) clearInterval(this.intervalId)
+        if (this.intervalId) clearInterval(this.intervalId);
+        this.abortController.abort()
     }
 
     start(targetFramerate: number) {
+        this.abortController = new AbortController();
+        this.abortSignal = this.abortController.signal;
         let t = 0;
         for(const object of this.objects) {
             object.onInitialized();
@@ -641,7 +692,7 @@ export class App {
                 e.preventDefault();
                 debugEnabled = !debugEnabled;
             }
-        })
+        }, { signal: this.abortSignal })
         console.log(`[${chalk.blueBright("Info")}] App starting!`)
         this.intervalId = setInterval(() => {
             if (!this.ctx) return;

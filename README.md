@@ -1,4 +1,5 @@
 # en25 final ~ Super Mr. Bennet
+
 [Public Website](https://bennet.tgreenhagen.com) | [Itch.io](https://openchanter.itch.io/super-mr-bennet) | [Level Editor](https://bennet.tgreenhagen.com/editor/)
 
 A web-based platformer game I am working on for my English class final project. It features a reinterpretation of the portion of Jane Austen's Pride and Prejudice in which Mr. Bennet searches for his daughter Lydia after she ran off with Mr. Wickham.
@@ -12,7 +13,7 @@ A web-based platformer game I am working on for my English class final project. 
 ---
 
 >[!NOTE]
->There is a known issue with the level editor where, if a level is to big upon entering playtest, the server will refuse to respond to the URL due to the level data being stored in the URL.
+>There is a known issue with the level editor where if a level is to big upon entering playtest, the server will refuse to respond to the URL due to the level data being stored in the URL.
 
 ## Features
 **Game**

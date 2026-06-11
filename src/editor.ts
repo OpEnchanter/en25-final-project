@@ -3,6 +3,8 @@ import chalk from "chalk";
 
 import tiledata from "/assets/tiles/tiledata.json"
 
+import EditorHtml from "/editor/index.html?raw"
+
 const tileset: Record<string, Array<Array<string>>> = tiledata.tilesets;
 
 type StaticObject = {
@@ -37,112 +39,6 @@ const tileSets: Array<string> = Object.keys(tileset);
 
 let currentTile = "brick/brick";
 
-const tilePicker = document.getElementById("tileList");
-const tilesetPicker = document.getElementById("tilesetList");
-const objectPicker = document.getElementById("dynamicObjectList");
-for (const t of tiles) {
-    tilePicker?.appendChild((()=>{
-        const e = document.createElement("label");
-        e.className = "tile";
-
-        const radio = document.createElement("input");
-        radio.type = "radio";
-        radio.name = "tiles";
-        radio.checked = (t == currentTile)
-        radio.value = t;
-
-        const img = document.createElement("img");
-        let imsrc = Object.keys(tiledata.editor_textures).includes(t) ? `/assets/tiles/${tiledata.editor_textures?.[t as string]}.png` :`/assets/tiles/${t}.png`
-        img.src = imsrc;
-        img.width = 16;
-        img.height = 16;
-
-        const span = document.createElement("span");
-        span.innerText = tileNameAliases[t] as string;
-
-        e.appendChild(radio);
-        e.appendChild(img);
-        e.appendChild(span);
-
-        radio.addEventListener("change", (e) => {
-            currentTile = (e?.target as HTMLInputElement).value;
-
-            if (selectedStaticObject !== -1) {
-                const obj: StaticObject = scene.staticObjects[selectedStaticObject] as StaticObject
-                if (obj == undefined) return
-                obj.objectId = currentTile;
-            }
-        })
-
-        return e;
-    })())
-}
-
-for (const t of tileSets) {
-    tilesetPicker?.appendChild((()=>{
-        const e = document.createElement("label");
-        e.className = "tile";
-
-        const radio = document.createElement("input");
-        radio.type = "radio";
-        radio.name = "tiles";
-        radio.value = t;
-
-        const img = document.createElement("img");
-        img.src = `/assets/tiles/${(tileset[t] as Array<Array<string>>)[0]?.[0] as string}.png`;
-        img.width = 16;
-        img.height = 16;
-
-        const span = document.createElement("span");
-        span.innerText = tileNameAliases[t] as string;
-
-        e.appendChild(radio);
-        e.appendChild(img);
-        e.appendChild(span);
-
-        radio.addEventListener("change", (e) => {
-            currentTile = e?.target?.value;
-            if (selectedStaticObject !== -1) {
-                const obj: StaticObject = scene.staticObjects[selectedStaticObject] as StaticObject
-                if (obj == undefined) return
-                obj.objectId = currentTile;
-            }
-        })
-
-        return e;
-    })())
-}
-
-for (const o of Object.keys(dynamicTiles)) {
-    objectPicker?.appendChild((()=>{
-        const e = document.createElement("label");
-        e.className = "tile";
-
-        const radio = document.createElement("input");
-        radio.type = "radio";
-        radio.name = "tiles";
-        radio.value = o;
-
-        const img = document.createElement("img");
-        let imsrc = Object.keys(tiledata.editor_textures).includes(dynamicTiles[o]?.spriteName) ? `/assets/tiles/${tiledata.editor_textures[dynamicTiles[o]?.spriteName]}.png` :`/assets/tiles/${dynamicTiles[o]?.spriteName}.png`
-        img.src = imsrc;
-        img.width = 16;
-        img.height = 16;
-
-        const span = document.createElement("span");
-        span.innerText = tileNameAliases[o] as string;
-
-        e.appendChild(radio);
-        e.appendChild(img);
-        e.appendChild(span);
-
-        radio.addEventListener("change", (e) => {
-            currentTile = e?.target?.value;
-        })
-
-        return e;
-    })())
-}
 
 // Create image cache for tile rendering
 let tileImageCache: Record<string, HTMLImageElement> = {}
@@ -150,43 +46,21 @@ let tileImageCache: Record<string, HTMLImageElement> = {}
 tileImageCache["editor-null"] = new window.Image();
 tileImageCache["editor-null"].src = "/assets/tiles/editor-null.png"
 
-for (const tile of tiles) {
-    tileImageCache[tile] = new window.Image();
-    let imsrc = Object.keys(tiledata.editor_textures).includes(tile) ? `/assets/tiles/${tiledata.editor_textures?.[tile as string]}.png` :`/assets/tiles/${tile}.png`
-    tileImageCache[tile].src = imsrc;
-}
-
-for (const set of Object.keys(tileset)) {
-    for (let x = 0; x<3; x++) {
-        for (let y = 0; y<3; y++) {
-            if (!tileset[set]) continue
-            const tilename = tileset[set]?.[y]?.[x] as string
-            tileImageCache[tilename] = new window.Image();
-            tileImageCache[tilename].src = `/assets/tiles/${tilename}.png`
-        }
-    }
-}
-
-for (const obj of Object.keys(dynamicTiles)) {
-    tileImageCache[obj] = new window.Image();
-    let imsrc = Object.keys(tiledata.editor_textures).includes(dynamicTiles[obj]?.spriteName) ? `/assets/tiles/${tiledata.editor_textures[dynamicTiles[obj]?.spriteName]}.png` :`/assets/tiles/${dynamicTiles[obj]?.spriteName}.png`
-    tileImageCache[obj].src = imsrc;
-}
-
 class CameraController extends Engine.ComponentBase {
     keys: any = {};
     alt: boolean = false;
     private transform: Engine.Transform | null = null;
     override onInitialized(): void {
         document.body.addEventListener('keydown', (e) => {
-            this.keys[e.key] = true;
+            this.keys[e.key.toLowerCase()] = true;
             this.alt = e.shiftKey;
-        })
+        }, {signal: app?.abortSignal})
         document.body.addEventListener('keyup', (e) => {
-            this.keys[e.key] = false;
+            this.keys[e.key.toLowerCase()] = false;
             this.alt = e.shiftKey;
-        })
+        }, {signal: app?.abortSignal})
         this.transform = this.object?.getComponents(Engine.Transform)[0] as Engine.Transform;
+        this.transform.position = {x: -64-app.viewportScale.x/2, y: -24-app.viewportScale.y/2}
     }
 
     override onUpdate(): void {
@@ -237,7 +111,7 @@ class EditorRenderer extends Engine.ComponentBase {
                     selectedDynamicObject = -1;
                 }
             }
-        })
+        }, {signal: app?.abortSignal})
 
         app.canvas.addEventListener("mousedown", (e) => {
             this.isMouseDown = true;
@@ -375,12 +249,12 @@ class EditorRenderer extends Engine.ComponentBase {
                 selectedStaticObject = -1;
                 selectedDynamicObject = -1;
             }
-        })
+        }, {signal: app?.abortSignal})
 
         app.canvas.addEventListener("mouseup", (e) => {
             this.isMouseDown = false;
             this.isDragging = false;
-        });
+        }, {signal: app?.abortSignal});
 
         app.canvas.addEventListener("mousemove", (e) => {
             if (!app.options.downscaleFactor) return
@@ -408,7 +282,7 @@ class EditorRenderer extends Engine.ComponentBase {
                 }
             }
             this.mPos = {x:e.clientX, y:e.clientY};
-        })
+        }, {signal: app?.abortSignal})
     }
 
     override onLateUpdate(): void {
@@ -507,6 +381,18 @@ class EditorRenderer extends Engine.ComponentBase {
     }
 }
 
+class MenuController extends Engine.ComponentBase {
+    override onInitialized(): void {
+        document.body.addEventListener("keydown", (e) => {
+            if (e.key === "Tab") {
+                e.preventDefault();
+                menuOpen = !menuOpen;
+                updateSidebar();
+            }
+        }, {signal: app?.abortSignal})
+    }
+}
+
 document.getElementById("exportLevelButton")?.addEventListener("click", (e) => {
     console.log("Exporting")
     const exportedTextArea = document.getElementById("export");
@@ -530,7 +416,7 @@ document.getElementById("playtestButton")?.addEventListener("click", (e) => {
 
 let menuOpen = false;
 function updateSidebar() {
-    for (const elem of document.getElementsByClassName("sidebar")) {
+    for (const elem of document.querySelectorAll(".sidebar")) {
         (elem as HTMLElement).style.transform = menuOpen ? "translateX(0%)" : "translateX(100%)";
     }
 
@@ -542,22 +428,6 @@ function updateSidebar() {
     sceneOptions.style.transform = menuOpen ? "translateX(0%)" : "translateX(calc(-100% - 24px))";
 }
 
-updateSidebar()
-document.getElementById("menuButton")?.addEventListener("click", (e) => {
-    console.log("MENU")
-    menuOpen = !menuOpen;
-    updateSidebar()
-})
-
-document.body.addEventListener("keydown", (e) => {
-    if (e.key === "Tab") {
-        e.preventDefault();
-        menuOpen = !menuOpen;
-        updateSidebar();
-    }
-})
-
-
 let scene: SerializedWorld = {
     staticObjects: [],
     dynamicObjects: []
@@ -566,24 +436,190 @@ let scene: SerializedWorld = {
 let selectedStaticObject: number = -1;
 let selectedDynamicObject: number = -1;
 
-const queryString = window.location.search;
-const urlParams = new URLSearchParams(queryString);
+let app: Engine.App | undefined = undefined;
 
-scene = urlParams.get("map") ? JSON.parse(decodeURI(urlParams.get("map") as string)) : scene
+export class Scene extends Engine.Scene {
+    private intervalId: any = undefined;
+    override load(globalApp: Engine.App): void {
+        const parser = new DOMParser();
+        document.body.querySelector(".content")?.appendChild(parser.parseFromString(EditorHtml, "text/html").querySelector(".overlays"))
 
-const app = new Engine.App({
-    downscaleFactor: 2
-});
+        app = globalApp;
+        app.options.downscaleFactor = 2;
 
-app.addObject(new Engine.GameObjectBuilder(app)
-    .addComponent(new Engine.Transform({x: -64-app.viewportScale.x/2, y: -24-app.viewportScale.y/2}, 0, {x: 0, y: 0}))
-    .addComponent(new Engine.Camera())
-    .addComponent(new CameraController())
-    .build())
+        document.getElementById("gameButton")?.addEventListener("click", () => {
+            console.log("Loading Game")
+            app?.sceneManager.loadScene("game", app);
+        }, {signal: app?.abortSignal})
 
-app.addObject(new Engine.GameObjectBuilder(app)
-    .addComponent(new Engine.Transform({x: 0, y: 0}, 0, {x: 16, y: 16}))
-    .addComponent(new EditorRenderer())
-    .build())
+        const tilePicker = document.getElementById("tileList");
+        const tilesetPicker = document.getElementById("tilesetList");
+        const objectPicker = document.getElementById("dynamicObjectList");
 
-app.start(60);
+        for (const t of tiles) {
+            tilePicker?.appendChild((()=>{
+                const e = document.createElement("label");
+                e.className = "tile";
+
+                const radio = document.createElement("input");
+                radio.type = "radio";
+                radio.name = "tiles";
+                radio.checked = (t == currentTile)
+                radio.value = t;
+
+                const img = document.createElement("img");
+                let imsrc = Object.keys(tiledata.editor_textures).includes(t) ? `/assets/tiles/${tiledata.editor_textures?.[t as string]}.png` :`/assets/tiles/${t}.png`
+                img.src = imsrc;
+                img.width = 16;
+                img.height = 16;
+
+                const span = document.createElement("span");
+                span.innerText = tileNameAliases[t] as string;
+
+                e.appendChild(radio);
+                e.appendChild(img);
+                e.appendChild(span);
+
+                radio.addEventListener("change", (e) => {
+                    currentTile = (e?.target as HTMLInputElement).value;
+
+                    if (selectedStaticObject !== -1) {
+                        const obj: StaticObject = scene.staticObjects[selectedStaticObject] as StaticObject
+                        if (obj == undefined) return
+                        obj.objectId = currentTile;
+                    }
+                }, {signal: app?.abortSignal})
+
+                return e;
+            })())
+        }
+
+        for (const t of tileSets) {
+            tilesetPicker?.appendChild((()=>{
+                const e = document.createElement("label");
+                e.className = "tile";
+
+                const radio = document.createElement("input");
+                radio.type = "radio";
+                radio.name = "tiles";
+                radio.value = t;
+
+                const img = document.createElement("img");
+                img.src = `/assets/tiles/${(tileset[t] as Array<Array<string>>)[0]?.[0] as string}.png`;
+                img.width = 16;
+                img.height = 16;
+
+                const span = document.createElement("span");
+                span.innerText = tileNameAliases[t] as string;
+
+                e.appendChild(radio);
+                e.appendChild(img);
+                e.appendChild(span);
+
+                radio.addEventListener("change", (e) => {
+                    currentTile = e?.target?.value;
+                    if (selectedStaticObject !== -1) {
+                        const obj: StaticObject = scene.staticObjects[selectedStaticObject] as StaticObject
+                        if (obj == undefined) return
+                        obj.objectId = currentTile;
+                    }
+                }, {signal: app?.abortSignal})
+
+                return e;
+            })())
+        }
+
+        for (const o of Object.keys(dynamicTiles)) {
+            objectPicker?.appendChild((()=>{
+                const e = document.createElement("label");
+                e.className = "tile";
+
+                const radio = document.createElement("input");
+                radio.type = "radio";
+                radio.name = "tiles";
+                radio.value = o;
+
+                const img = document.createElement("img");
+                let imsrc = Object.keys(tiledata.editor_textures).includes(dynamicTiles[o]?.spriteName) ? `/assets/tiles/${tiledata.editor_textures[dynamicTiles[o]?.spriteName]}.png` :`/assets/tiles/${dynamicTiles[o]?.spriteName}.png`
+                img.src = imsrc;
+                img.width = 16;
+                img.height = 16;
+
+                const span = document.createElement("span");
+                span.innerText = tileNameAliases[o] as string;
+
+                e.appendChild(radio);
+                e.appendChild(img);
+                e.appendChild(span);
+
+                radio.addEventListener("change", (e) => {
+                    currentTile = e?.target?.value;
+                }, {signal: app?.abortSignal})
+
+                return e;
+            })())
+        }
+
+        for (const tile of tiles) {
+            tileImageCache[tile] = new window.Image();
+            let imsrc = Object.keys(tiledata.editor_textures).includes(tile) ? `/assets/tiles/${tiledata.editor_textures?.[tile as string]}.png` :`/assets/tiles/${tile}.png`
+            tileImageCache[tile].src = imsrc;
+        }
+
+        for (const set of Object.keys(tileset)) {
+            for (let x = 0; x<3; x++) {
+                for (let y = 0; y<3; y++) {
+                    if (!tileset[set]) continue
+                    const tilename = tileset[set]?.[y]?.[x] as string
+                    tileImageCache[tilename] = new window.Image();
+                    tileImageCache[tilename].src = `/assets/tiles/${tilename}.png`
+                }
+            }
+        }
+
+        for (const obj of Object.keys(dynamicTiles)) {
+            tileImageCache[obj] = new window.Image();
+            let imsrc = Object.keys(tiledata.editor_textures).includes(dynamicTiles[obj]?.spriteName) ? `/assets/tiles/${tiledata.editor_textures[dynamicTiles[obj]?.spriteName]}.png` :`/assets/tiles/${dynamicTiles[obj]?.spriteName}.png`
+            tileImageCache[obj].src = imsrc;
+        }
+
+        updateSidebar()
+        document.getElementById("menuButton")?.addEventListener("click", (e) => {
+            console.log("MENU")
+            menuOpen = !menuOpen;
+            updateSidebar()
+        }, {signal: app?.abortSignal})
+
+        const queryString = window.location.search;
+        const urlParams = new URLSearchParams(queryString);
+
+        this.intervalId = setInterval(() => {
+            if (!app) return
+            app.options.downscaleFactor = 2 * (window.innerHeight / 665)
+        }, 500);
+
+        scene = urlParams.get("map") ? JSON.parse(decodeURI(urlParams.get("map") as string)) : scene
+
+        app.addObject(new Engine.GameObjectBuilder(app)
+            .addComponent(new Engine.Transform({x: -64-app.viewportScale.x/2, y: -24-app.viewportScale.y/2}, 0, {x: 0, y: 0}))
+            .addComponent(new Engine.Camera())
+            .addComponent(new CameraController())
+            .build())
+
+        app.addObject(new Engine.GameObjectBuilder(app)
+            .addComponent(new Engine.Transform({x: 0, y: 0}, 0, {x: 16, y: 16}))
+            .addComponent(new EditorRenderer())
+            .build())
+
+        app.addObject(new Engine.GameObjectBuilder(app)
+            .addComponent(new MenuController)
+            .build()
+        )
+
+        app.start(60);       
+    }
+
+    override unload() {
+        clearInterval(this.intervalId);   
+    }
+}
