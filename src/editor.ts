@@ -43,9 +43,6 @@ let currentTile = "brick/brick";
 // Create image cache for tile rendering
 let tileImageCache: Record<string, HTMLImageElement> = {}
 
-tileImageCache["editor-null"] = new window.Image();
-tileImageCache["editor-null"].src = "/assets/tiles/editor-null.png"
-
 class CameraController extends Engine.ComponentBase {
     keys: any = {};
     alt: boolean = false;
@@ -427,6 +424,11 @@ class MenuController extends Engine.ComponentBase {
             app?.sceneManager.loadScene("title", app);
         }, {signal: app?.abortSignal})
 
+        document.getElementById("menuButton")?.addEventListener("click", (e) => {
+            menuOpen = !menuOpen;
+            updateSidebar()
+        }, {signal: app?.abortSignal})
+
         const tilePicker = document.getElementById("tileList");
         const tilesetPicker = document.getElementById("tilesetList");
         const objectPicker = document.getElementById("dynamicObjectList");
@@ -599,10 +601,6 @@ export class Scene extends Engine.Scene {
         }
 
         updateSidebar()
-        document.getElementById("menuButton")?.addEventListener("click", (e) => {
-            menuOpen = !menuOpen;
-            updateSidebar()
-        }, {signal: app?.abortSignal})
 
         const queryString = window.location.search;
         const urlParams = new URLSearchParams(queryString);

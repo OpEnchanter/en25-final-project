@@ -201,6 +201,9 @@ function startLevelLoad() {
     if (!app) return;
     app.objects = [];
 
+    playerSpawnPosition.x = -64;
+    playerSpawnPosition.y = -24;
+
     const queryString = window.location.search;
     const urlParams = new URLSearchParams(queryString);
 
@@ -294,6 +297,9 @@ export class Scene extends Engine.Scene {
             if (!app) return;
             app.options.downscaleFactor = 4 * (window.innerHeight / 665)
         }, 500)
+
+        playerSpawnPosition.x = -64;
+        playerSpawnPosition.y = -24;
 
         startLevelLoad();
 

@@ -103,7 +103,13 @@ export const loadDynamicObjects: (inputs: DynamicObjectInputs)=>Record<string, (
             return (new Engine.GameObjectBuilder(app)
                 .addComponent(new BlankScreenDialogue(objectData.text, inputs.levelIndex as number, inputs.playerSpawnPosition as Engine.vector, inputs.levelLoadCallback as ()=>void))
                 .build())
-        }
+        },
+        "grass": (app: Engine.App, position: Engine.vector, tileScale: number, objectData: any, windNoise: NoiseFunction2D) => {
+            return (new Engine.GameObjectBuilder(app)
+                .addComponent(new Engine.Transform({ x: tileScale * position.x, y: tileScale * position.y }, 0, { x: tileScale, y: tileScale }))
+                .addComponent(new Grass(inputs.playerTransform, windNoise))
+                .build())
+        },
     });
 };
 
@@ -304,7 +310,7 @@ export class TextBox extends Engine.ComponentBase {
         }, {signal: this.object.app?.abortSignal})
     }
 
-    override onLateRender(): void {
+    override onUIRender(): void {
         if (!this.object) return
         // Top row
         const xpad = 32;
@@ -610,7 +616,7 @@ export class BlankScreenDialogue extends Engine.ComponentBase {
         }, {signal: this.object.app?.abortSignal})
     }
 
-    override onLateRender(): void {
+    override onUIRender(): void {
         if (!this.object || !this.object.app.ctx) return
         // Top row
         const xpad = 32;
@@ -763,8 +769,91 @@ export class Enemy extends Engine.ComponentBase {
     }
 }
 
+export class Grass extends Engine.ComponentBase {
+    private transform: Engine.Transform | undefined = undefined;
+
+    private bladePositions: Array<number> = [];
+    private bladeColors: Array<string> = [];
+    private bladeTilts: Array<number> = [];
+
+    private t: number = 0;
+
+    noise: NoiseFunction2D;
+
+    playerTransform: Engine.Transform | undefined ;
+
+    constructor(player: Engine.Transform | undefined, windNoise: NoiseFunction2D) {
+        super();
+        this.playerTransform = player;
+        this.noise = windNoise;
+    }
+
+    override onInitialized(): void {
+        this.transform = this.object?.getComponents(Engine.Transform)[0] as Engine.Transform;
+
+        for (let x = 0; x < 3; x++) {
+            this.bladePositions.push(Math.random()*16)
+            this.bladeColors.push(`rgb(${Math.random()*25}, ${Math.random()*50+100}, ${Math.random()*75})`)
+            this.bladeTilts.push(Math.random()*4-2)
+        }
+    }
+
+    override onLateUpdate(): void {
+        if (!this.transform || !this.object || !this.object.app.ctx) return
+
+        const clip = this.object.app.renderingClippingPlane;
+        const clipPos = clip.position;
+        const clipScale = clip.scale;
+
+
+        if (this.transform.position.x > clipPos.x + clipScale.x / 2 + 16 || this.transform.position.x < clipPos.x - clipScale.x / 2 - 16) return
+
+        const rPos = {x:this.transform.position.x - clipPos.x + (clipScale.x / 2) - 8, y:this.transform.position.y - clipPos.y + (clipScale.y / 2) + 8}
+
+        for (let i = 0; i < this.bladePositions.length; i++) {
+            const xOff = (this.bladePositions[i] as number)
+
+            let movement = 
+                this.playerTransform ?
+                (Math.max(0, 12 - Math.abs((this.transform.position.x + xOff) - (this.playerTransform.position.x + 8)))*0.3 * ((this.transform.position.x + xOff - this.playerTransform.position.x) / Math.abs((this.transform.position.x + xOff) - this.playerTransform.position.x))) / ((this.transform.position.y - this.playerTransform.position.y + 8) / 10)
+                :
+                0
+            if (this.bladeTilts[i] != undefined) {
+                movement += this.bladeTilts[i]
+            }
+
+            movement += this.noise((this.transform.position.x + xOff / 100) + this.t / 256, 0) * 4
+
+            const verts: Array<Engine.vector> = [
+                {x:rPos.x + xOff, y:rPos.y},
+                {x:rPos.x + 2 + xOff, y:rPos.y},
+                {x:rPos.x + 1 + xOff + movement, y:rPos.y - 7 + (Math.abs(movement) / 2)}
+            ]
+
+            const gradient = this.object.app.ctx.createLinearGradient(rPos.x+xOff, rPos.y, rPos.x+xOff, rPos.y - 5)
+            gradient.addColorStop(0, "#3e8948")
+            gradient.addColorStop(1, this.bladeColors[i] as string)
+            this.object.app.ctx.fillStyle = gradient
+
+            if (!verts[0]) continue
+
+            this.object.app.ctx.beginPath();
+            this.object.app.ctx.moveTo(verts[0].x, verts[0].y)
+            for (const v of verts) {
+                this.object.app.ctx.lineTo(v.x, v.y)
+            }
+            this.object.app.ctx.closePath()
+
+            this.object.app.ctx.fill()
+        }
+        this.t++;
+    }
+}
+
 export function loadWorldFromJson(world: SerializedWorld, app: Engine.App, tileScale: number, inputs: DynamicObjectInputs) {
     const staticObjects = world.staticObjects;
+    const dynamicObjectFunctions = loadDynamicObjects(inputs);
+    const windNoise: NoiseFunction2D = createNoise2D();
     for (const object of staticObjects) {
         const k = object.areaScale
         const f = object.areaStartPos
@@ -810,8 +899,13 @@ export function loadWorldFromJson(world: SerializedWorld, app: Engine.App, tileS
                             spriteSrc = `assets/tiles/${tileset[object.objectId]?.[tileType.y]?.[tileType.x] as string}.png`
                         }
                     }
+                    const px = f.x * tileScale + (tileScale * b)
+                    const py = f.y * tileScale + (tileScale * i)
+                    if (["assets/tiles/brick/grass/brick-grass.png", "assets/tiles/stone-bricks/grass/stone-bricks-grass.png"].includes(spriteSrc) && dynamicObjectFunctions.grass) {
+                        app.addObject(dynamicObjectFunctions.grass(app, {x: (px/16), y:(py/16)-1}, 16, {}, windNoise));
+                    }
                     let o: Engine.GameObject = new Engine.GameObjectBuilder(app)
-                        .addComponent(new Engine.Transform({ x: f.x * tileScale + (tileScale * b), y: f.y * tileScale + (tileScale * i) }, 0, { x: tileScale, y: tileScale }))
+                        .addComponent(new Engine.Transform({ x: px, y: py }, 0, { x: tileScale, y: tileScale }))
                         .addComponent(new Engine.Sprite(spriteSrc))
                         .addComponent(new Engine.Renderer(app.ctx))
                         .build();
@@ -821,7 +915,6 @@ export function loadWorldFromJson(world: SerializedWorld, app: Engine.App, tileS
         }
     }
 
-    const dynamicObjectFunctions = loadDynamicObjects(inputs);
     for (const object of world.dynamicObjects) {
         if (dynamicObjectFunctions[object.objectId] === undefined) return
         app.addObject(dynamicObjectFunctions[object.objectId](app, object.position, tileScale, object.objectData))

@@ -74,9 +74,9 @@ export function draw(ctx: any, image: HTMLImageElement, rotation: number, positi
     }
 
     ctx.translate(position.x, position.y);
-        ctx.rotate((Math.PI / 180) * -rotation);
-        ctx.scale(xscalar, 1)
-        ctx.translate(-1*(position.x), -1*(position.y));
+    ctx.rotate((Math.PI / 180) * -rotation);
+    ctx.scale(xscalar, 1)
+    ctx.translate(-1*(position.x), -1*(position.y));
 }
 
 export class ComponentBase {
@@ -102,6 +102,8 @@ export class ComponentBase {
     onLateUpdate(): void {};
 
     onLateRender(): void {};
+
+    onUIRender(): void {};
 
     onInitialized(): void {};
 }
@@ -146,7 +148,7 @@ export class Renderer extends ComponentBase {
         this.transform = this.object?.getComponents(Transform)[0] as Transform;
     }
 
-    override onLateUpdate(): void {
+    override onLateRender(): void {
         if (!this.transform || !this.object) {return}
         const vscale = this.object.app.renderingClippingPlane.scale;
         const cplane = this.object.app.renderingClippingPlane;
@@ -563,6 +565,12 @@ export class GameObject {
             m.onLateRender();
         }
     }
+
+    public onUIRender() {
+        for (const m of this.Components) {
+            m.onUIRender();
+        }
+    }
 }
 
 export class GameObjectBuilder {
@@ -726,6 +734,9 @@ export class App {
             }
             for (const object of this.objects) {
                 object.onLateRender();
+            }
+            for (const object of this.objects) {
+                object.onUIRender();
             }
             t++;
         }, 1000/targetFramerate)
