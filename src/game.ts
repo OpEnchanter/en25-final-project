@@ -1,9 +1,6 @@
 import * as Engine from "./lib/engine.ts";
-import chalk from "chalk";
+import { loadWorldFromJson, TextBox, CloudRenderer, PlayerHealthController, type SerializedWorld, type DynamicObjectInputs } from "./lib/worldLoader.ts";
 
-import { createNoise2D, type NoiseFunction2D } from "simplex-noise";
-
-import tiledata from "/assets/tiles/tiledata.json"
 import data from "./data/data.json"
 
 let textBox: TextBox | undefined = undefined;
@@ -13,115 +10,6 @@ let playerTransform: Engine.Transform;
 
 let levelIndex = 0;
 let playerSpawnPosition = { x: -64, y: -24 };
-
-const dynamicObjectFunctions: Record<string, (position: Engine.vector, tileScale: number, objectData: any) => Engine.GameObject> = {
-    "sign": (position: Engine.vector, tileScale: number, objectData: any) => {
-        return (new Engine.GameObjectBuilder(app)
-            .addComponent(new Engine.Transform({ x: tileScale * position.x, y: tileScale * position.y }, 0, { x: tileScale, y: tileScale }))
-            .addComponent(new Engine.Sprite("assets/tiles/props/sign.png"))
-            .addComponent(new Engine.Renderer(app.ctx))
-            .build())
-    },
-    "flower_red": (position: Engine.vector, tileScale: number, objectData: any) => {
-        return (new Engine.GameObjectBuilder(app)
-            .addComponent(new Engine.Transform({ x: tileScale * position.x, y: tileScale * position.y }, 0, { x: tileScale, y: tileScale }))
-            .addComponent(new Engine.Sprite("assets/tiles/props/flower-red.png"))
-            .addComponent(new Engine.Renderer(app.ctx))
-            .build())
-    },
-    "flower_blue": (position: Engine.vector, tileScale: number, objectData: any) => {
-        return (new Engine.GameObjectBuilder(app)
-            .addComponent(new Engine.Transform({ x: tileScale * position.x, y: tileScale * position.y }, 0, { x: tileScale, y: tileScale }))
-            .addComponent(new Engine.Sprite("assets/tiles/props/flower-blue.png"))
-            .addComponent(new Engine.Renderer(app.ctx))
-            .build())
-    },
-    "lucky_block": (position: Engine.vector, tileScale: number, objectData: any) => {
-        return (new Engine.GameObjectBuilder(app)
-            .addComponent(new Engine.Transform({ x: tileScale * position.x, y: tileScale * position.y }, 0, { x: tileScale, y: tileScale }))
-            .addComponent(new Engine.Sprite("assets/tiles/lucky.png"))
-            .addComponent(new Engine.Renderer(app.ctx))
-            .addComponent(new Engine.BoxCollider({ x: 16, y: 16 }, { x: 0, y: 0 }, false))
-            .addComponent(new Engine.BoxCollider({ x: 4, y: 8 }, { x: 0, y: 8 }, true))
-            .addComponent(new LuckyBlock(objectData))
-            .build())
-    },
-    "title": (position: Engine.vector, tileScale: number, objectData: any) => {
-        return (new Engine.GameObjectBuilder(app)
-            .addComponent(new Engine.Transform({ x: tileScale * position.x, y: tileScale * position.y }, 0, { x: 16 * tileScale, y: 8 * tileScale }))
-            .addComponent(new Engine.Sprite("assets/tiles/title.png"))
-            .addComponent(new Engine.Renderer(app.ctx))
-            .build())
-    },
-    "text_trigger": (position: Engine.vector, tileScale: number, objectData: any) => {
-        return (new Engine.GameObjectBuilder(app)
-            .addComponent(new Engine.Transform({ x: tileScale * position.x, y: tileScale * position.y }, 0, { x: tileScale, y: tileScale }))
-            .addComponent(new TextTrigger(textBox as TextBox, playerTransform, objectData.text))
-            .build())
-    },
-    "checkpoint": (position: Engine.vector, tileScale: number, objectData: any) => {
-        return (new Engine.GameObjectBuilder(app)
-            .addComponent(new Engine.Transform({ x: tileScale * position.x, y: tileScale * position.y }, 0, { x: tileScale, y: tileScale }))
-            .addComponent(new Engine.Sprite("assets/tiles/flag/1.png"))
-            .addComponent(new Engine.Renderer(app.ctx))
-            .addComponent(new Checkpoint())
-            .build())
-    },
-    "next_level_trigger": (position: Engine.vector, tileScale: number, objectData: any) => {
-        return (new Engine.GameObjectBuilder(app)
-            .addComponent(new Engine.Transform({ x: tileScale * position.x, y: tileScale * position.y }, 0, { x: tileScale, y: tileScale }))
-            .addComponent(new NextLevelTrigger())
-            .build())
-    },
-    "moving_platform": (position: Engine.vector, tileScale: number, objectData: any) => {
-        return (new Engine.GameObjectBuilder(app)
-            .addComponent(new Engine.Transform({ x: tileScale * position.x, y: tileScale * position.y }, 0, { x: 3 * tileScale, y: tileScale }))
-            .addComponent(new Engine.Sprite("assets/tiles/moving-platform.png"))
-            .addComponent(new Engine.Renderer(app.ctx))
-            .addComponent(new Engine.BoxCollider({ x: 48, y: 16 }, { x: 0, y: 0 }, false))
-            .addComponent(new MovingPlatform(objectData.x_translation, objectData.y_translation, objectData.speed))
-            .build())
-    },
-    "enemy": (position: Engine.vector, tileScale: number, objectData: any) => {
-        return (new Engine.GameObjectBuilder(app)
-            .addComponent(new Engine.Transform({ x: tileScale * position.x, y: tileScale * position.y }, 0, { x: tileScale, y: tileScale }))
-            .addComponent(new Engine.Sprite("assets/tiles/enemy/animation/walking/1.png"))
-            .addComponent(new Engine.Renderer(app.ctx))
-            .addComponent(new Engine.BoxCollider({ x: 1, y: 8 }, { x: -11, y: 2 }, true))
-            .addComponent(new Engine.BoxCollider({ x: 1, y: 8 }, { x: 11, y: 2 }, true))
-            .addComponent(new Engine.BoxCollider({ x: 14, y: 1 }, { x: 0, y: -11 }, true))
-            .addComponent(new Engine.BoxCollider({ x: 14, y: 16 }, { x: 0, y: 0 }, false))
-            .addComponent(new Engine.Rigidbody({ bounciness: 0, friction: 1, drag: 1 } as Engine.BodyProperties))
-            .addComponent(new Enemy())
-            .build())
-    },
-    "story_dialogue": (position: Engine.vector, tileScale: number, objectData: any) => {
-        return (new Engine.GameObjectBuilder(app)
-            .addComponent(new BlankScreenDialogue(objectData.text))
-            .build())
-    }
-};
-
-type StaticObject = {
-    objectId: string,
-    areaStartPos: Engine.vector,
-    areaScale: Engine.vector,
-    hasCollision: boolean
-}
-
-type DynamicObject = {
-    objectId: string,
-    position: Engine.vector,
-    objectData: Record<string, string>
-}
-
-type SerializedWorld = {
-    staticObjects: Array<StaticObject>
-    dynamicObjects: Array<DynamicObject>
-    levelOptions?: {
-        background: string
-    }
-}
 
 class CameraController extends Engine.ComponentBase {
     playerTransform: Engine.Transform | null = null;
@@ -137,9 +25,9 @@ class CameraController extends Engine.ComponentBase {
     }
 
     override onUpdate(): void {
-        if (!this.playerTransform || !this.transform) return;
+        if (!this.playerTransform || !this.transform || !this.object) return;
         this.transform.position.x += (this.playerTransform.position.x - this.transform.position.x) / 4
-        this.transform.position.y += (Math.min(this.playerTransform.position.y, -(app.viewportScale.y / 2) + 12) - this.transform.position.y) / 16
+        this.transform.position.y += (Math.min(this.playerTransform.position.y, -(this.object.app.viewportScale.y / 2) + 12) - this.transform.position.y) / 16
     }
 }
 
@@ -190,476 +78,6 @@ class PlayerAnimator extends Engine.ComponentBase {
     }
 }
 
-class LuckyBlock extends Engine.ComponentBase {
-    transform: Engine.Transform | null = null;
-    sprite: Engine.Sprite | null = null;
-    triggered: boolean = false;
-    startPos: Engine.vector = { x: 0, y: 0 };
-    tick: number = 0;
-
-    contents: any;
-
-    constructor(data: any) {
-        super();
-        this.contents = data.contents;
-    }
-
-    override onInitialized(): void {
-        this.transform = this.object?.getComponents(Engine.Transform)[0] as Engine.Transform;
-        this.sprite = this.object?.getComponents(Engine.Sprite)[0] as Engine.Sprite;
-        this.startPos = { x: this.transform.position.x, y: this.transform.position.y }
-    }
-
-    override onUpdate(): void {
-        if (this.triggered && this.transform) {
-            this.transform.position.y = this.startPos.y - Math.max(0.05 * (-this.tick * (this.tick - 25)), 0)
-            this.tick++;
-        }
-    }
-
-    override onTriggerEnter(params: Engine.TriggerData): void {
-        if (!this.transform || !this.sprite) return
-        if (!this.triggered) {
-            this.triggered = true
-            this.sprite.texture.src = "assets/tiles/lucky-consumed.png"
-            app.addObject(dynamicObjectFunctions[this.contents]({ x: this.transform.position.x / 16, y: this.transform.position.y / 16 - 1 }, 16, { contents: "" }));
-        }
-    }
-}
-
-class PlayerHealthController extends Engine.ComponentBase {
-    transform: Engine.Transform | null = null;
-
-    override onInitialized(): void {
-        this.transform = this.object?.getComponents(Engine.Transform)[0] as Engine.Transform;
-    }
-
-    public kill(): void {
-        playerTransform.position.x = playerSpawnPosition.x;
-        playerTransform.position.y = playerSpawnPosition.y - 1;
-        (player.getComponents(Engine.Rigidbody)[0] as Engine.Rigidbody).velocity = { x: 0, y: -2 }
-    }
-
-    override onUpdate(): void {
-        if (!this.transform) return
-        if (this.transform.position.y > 96) {
-            this.kill();
-        }
-    }
-}
-
-function drawWrappedText(ctx: any, text: string, x: number, y: number, maxWidth: number, lineHeight: number) {
-    const lines = text.split(":nl");
-    for (const line of lines) {
-        const words = line.split(" ");
-        let currentLine = "";
-
-        for (let i = 0; i < words.length; i++) {
-            let testLine = currentLine + words[i] + " ";
-            let metrics = ctx.measureText(testLine);
-            let testWidth = metrics.width;
-            if (testWidth > maxWidth && i > 0) {
-                ctx.fillText(currentLine, x, y);
-                currentLine = words[i] + " ";
-                y += lineHeight;
-            } else {
-                currentLine = testLine;
-            }
-        }
-
-        ctx.fillText(currentLine, x, y);
-        y += lineHeight;
-    }
-}
-
-class TextTrigger extends Engine.ComponentBase {
-    textBox: TextBox;
-    tracked: Engine.Transform;
-
-    transform: Engine.Transform | undefined = undefined;
-
-    triggered: boolean = false;
-    triggeredOld: boolean = false;
-
-    text: string;
-    constructor(textBox: TextBox, trackedTransform: Engine.Transform, text: string) {
-        super()
-        this.textBox = textBox;
-        this.tracked = trackedTransform;
-        this.text = text;
-    }
-
-    override onInitialized(): void {
-        this.transform = this.object?.getComponents(Engine.Transform)[0] as Engine.Transform;
-    }
-
-    override onUpdate(): void {
-        if (!this.transform || !this.tracked) return
-        if (this.transform.position.x < this.tracked.position.x) {
-            this.triggered = true;
-        }
-
-        if (this.triggered && !this.triggeredOld) {
-            this.textBox.setPages(this.text.split("\\"))
-        }
-
-        this.triggeredOld = this.triggered;
-    }
-}
-
-class TextBox extends Engine.ComponentBase {
-    textures: Array<Array<HTMLImageElement>> = [];
-    advanceButton: HTMLImageElement | undefined = undefined;
-    private pages: Array<String> = [];
-
-    private t = 0;
-    private pageIdx = 0;
-
-    writeSpeed = 1.5;
-
-    private nbty = -32;
-    private nby = -32;
-
-    private spacePressed = false;
-
-    public setPages(pages: Array<string>) {
-        this.pages = pages;
-        this.pageIdx = 0;
-    }
-
-    private getTexture(name: string) {
-        const img = new window.Image();
-        img.src = `assets/tiles/textbox/${name}.png`;
-        return img;
-    }
-
-    override onInitialized(): void {
-        this.advanceButton = this.getTexture("textbox-advance");
-        this.textures = [
-            [this.getTexture("textbox-top-left"), this.getTexture("textbox-top"), this.getTexture("textbox-top-right")],
-            [this.getTexture("textbox-left"), this.getTexture("textbox-center"), this.getTexture("textbox-right")],
-            [this.getTexture("textbox-bottom-left"), this.getTexture("textbox-bottom"), this.getTexture("textbox-bottom-right")]
-        ]
-
-        document.body.addEventListener("keydown", (e) => {
-            if (e.key === " ") {
-                this.spacePressed = true;
-            }
-        }, {signal: app?.abortSignal})
-
-        document.body.addEventListener("keyup", (e) => {
-            if (e.key === " ") {
-                this.spacePressed = false;
-            }
-        }, {signal: app?.abortSignal})
-    }
-
-    override onLateRender(): void {
-        // Top row
-        const xpad = 32;
-        const ypad = 16;
-        const cwid = app.viewportScale.x - (xpad + 8) * 2;
-        const chi = 16
-
-        if (this.pages.length !== 0) {
-            const splicedText = this.pages?.[this.pageIdx].slice(0, Math.floor(this.t / this.writeSpeed));
-
-            if (splicedText.length === this.pages[this.pageIdx]?.length && this.spacePressed) {
-                if (this.pageIdx < this.pages.length - 1) {
-                    this.pageIdx++;
-                    this.t = 0;
-                } else {
-                    this.pages = [];
-                }
-            }
-
-            this.nbty = splicedText.length === this.pages[this.pageIdx]?.length ? 0 : -32
-
-            this.nby += (this.nbty - this.nby) / 4
-
-            if (this.advanceButton) Engine.draw(app.ctx, this.advanceButton, 0, { x: xpad + cwid - 24, y: ypad + 32 + chi + this.nby }, { x: 64, y: 16 })
-            Engine.draw(app.ctx, this.textures?.[0]?.[0] as HTMLImageElement, 0, { x: xpad, y: ypad }, { x: 16, y: 16 });
-            Engine.draw(app.ctx, this.textures?.[0]?.[1] as HTMLImageElement, 0, { x: xpad + 8 + cwid / 2, y: ypad }, { x: cwid + 1, y: 16 });
-            Engine.draw(app.ctx, this.textures?.[0]?.[2] as HTMLImageElement, 0, { x: xpad + cwid + 16, y: ypad }, { x: 16, y: 16 });
-
-
-            Engine.draw(app.ctx, this.textures?.[1]?.[0] as HTMLImageElement, 0, { x: xpad, y: ypad + 8 + chi / 2 }, { x: 16, y: chi });
-            Engine.draw(app.ctx, this.textures?.[1]?.[1] as HTMLImageElement, 0, { x: xpad + 8 + cwid / 2, y: ypad + 8 + chi / 2 }, { x: cwid + 1, y: chi });
-            Engine.draw(app.ctx, this.textures?.[1]?.[2] as HTMLImageElement, 0, { x: xpad + cwid + 16, y: ypad + 8 + chi / 2 }, { x: 16, y: chi });
-
-            Engine.draw(app.ctx, this.textures?.[2]?.[0] as HTMLImageElement, 0, { x: xpad, y: ypad + 16 + chi }, { x: 16, y: 16 });
-            Engine.draw(app.ctx, this.textures?.[2]?.[1] as HTMLImageElement, 0, { x: xpad + 8 + cwid / 2, y: ypad + 16 + chi }, { x: cwid + 1, y: 16 });
-            Engine.draw(app.ctx, this.textures?.[2]?.[2] as HTMLImageElement, 0, { x: xpad + cwid + 16, y: ypad + 16 + chi }, { x: 16, y: 16 });
-
-
-            // Draw text
-            app.ctx.font = "7px 'PressStart2P'"
-            app.ctx.fillStyle = "black"
-
-            drawWrappedText(app.ctx, splicedText, xpad + 8, ypad + 8, cwid, 9)
-
-            this.t++;
-        }
-    }
-}
-
-class Checkpoint extends Engine.ComponentBase {
-    transform: Engine.Transform | null = null;
-    sprite: Engine.Sprite | null = null;
-    playerRb: Engine.Rigidbody | null = null;
-
-    playerSide: number = 0;
-    lastFrameSide: number = 0;
-
-    rotationVelocity: number = 0;
-
-    playerVelocity: number = 0;
-    t: number = 0;
-
-    initialPosition: Engine.vector = { x: 0, y: 0 };
-
-    deg = 0;
-
-    claimedImage: HTMLImageElement = new window.Image();
-
-    override onInitialized(): void {
-        this.transform = this.object?.getComponents(Engine.Transform)[0] as Engine.Transform;
-        this.sprite = this.object?.getComponents(Engine.Sprite)[0] as Engine.Sprite;
-        this.playerRb = player.getComponents(Engine.Rigidbody)[0] as Engine.Rigidbody;
-        this.initialPosition.x = this.transform.position.x;
-        this.initialPosition.y = this.transform.position.y;
-
-        this.claimedImage.src = 'assets/tiles/flag/2.png'
-    }
-
-    override onUpdate(): void {
-        if (!this.transform || !this.playerRb || !this.sprite) return
-        this.playerSide = playerTransform.position.x > this.transform?.position.x ? 1 : -1;
-
-        if (this.lastFrameSide !== this.playerSide && this.lastFrameSide !== 0) {
-            this.t = 1;
-            let ydist = Math.max(Math.abs(this.transform.position.y - playerTransform.position.y), 1);
-            this.rotationVelocity = this.playerRb.velocity.x * 5 / ydist;
-            this.sprite.texture = this.claimedImage;
-            playerSpawnPosition = this.transform.position;
-        }
-
-        this.deg += this.rotationVelocity;
-        this.deg = Math.min(Math.max(this.deg, -90), 90)
-        const rad = this.deg * (Math.PI / 180)
-
-        this.transform.rotation = this.deg;
-
-        this.transform.position.x = this.initialPosition.x - Math.cos(rad + Math.PI / 2) * 8
-        this.transform.position.y = this.initialPosition.y - Math.sin(rad + Math.PI / 2) * 8 + 8
-
-        this.lastFrameSide = this.playerSide;
-        this.rotationVelocity += (0 - this.deg) / 10;
-        this.rotationVelocity *= 0.95
-    }
-}
-
-class NextLevelTrigger extends Engine.ComponentBase {
-
-    transform: Engine.Transform | undefined = undefined;
-
-    triggered: boolean = false;
-    triggeredOld: boolean = false;
-    constructor() {
-        super()
-    }
-
-    override onInitialized(): void {
-        this.transform = this.object?.getComponents(Engine.Transform)[0] as Engine.Transform;
-    }
-
-    override onUpdate(): void {
-        if (!this.transform || !playerTransform) return
-        if (this.transform.position.x < playerTransform.position.x) {
-            this.triggered = true;
-        }
-
-        if (this.triggered && !this.triggeredOld) {
-            levelIndex++;
-
-            if (!(new URL(window.location.href).searchParams.has("playtest"))) {
-                localStorage.setItem("campaignLevelIndex", levelIndex.toString())
-            }
-
-            playerSpawnPosition = { x: -64, y: -24 };
-
-            app.stop();
-            startLevelLoad();
-            app.start(60);
-        }
-
-        this.triggeredOld = this.triggered;
-    }
-}
-
-class MovingPlatform extends Engine.ComponentBase {
-    translation: Engine.vector
-    startPos: Engine.vector = { x: 0, y: 0 }
-    transform: Engine.Transform | undefined = undefined;
-    speed: number = 1
-
-    t: number = 0;
-
-    constructor(xt: string, yt: string, speed: string) {
-        super()
-        this.translation = { x: parseInt(xt) * 8, y: parseInt(yt) * -8 }
-        this.speed = parseFloat(speed);
-    }
-
-    override onInitialized(): void {
-        this.transform = this.object?.getComponents(Engine.Transform)[0] as Engine.Transform;
-        this.startPos = structuredClone(this.transform.position);
-    }
-
-    override onUpdate(): void {
-        if (!this.transform) return;
-        this.transform.position.x = (this.startPos.x + this.translation.x) + (Math.sin((this.t + Math.PI * 8) * (1 / 16 * this.speed))) * this.translation.x
-        this.transform.position.y = (this.startPos.y + this.translation.y) + (Math.sin((this.t + Math.PI * 8) * (1 / 16 * this.speed))) * this.translation.y
-        this.t += 1;
-    }
-}
-
-class CloudRenderer extends Engine.ComponentBase {
-    noise2D: NoiseFunction2D = createNoise2D();
-
-    lowerBound = 0.6;
-    resolutionDivisor = 8
-
-    cameraTransform: Engine.Transform | undefined;
-
-    t = 0;
-
-    override onInitialized(): void {
-        this.cameraTransform = camera.getComponents(Engine.Transform)[0] as Engine.Transform;
-    }
-
-    override onUpdate(): void {
-        if (!app.ctx || !this.cameraTransform) return
-        app.ctx.fillStyle = "#ffffff2f";
-        const cp = app.renderingClippingPlane.position;
-        for (let x = 0; x < Math.floor(app.viewportScale.x / this.resolutionDivisor); x++) {
-            for (let y = 0; y < Math.floor(app.viewportScale.y / this.resolutionDivisor); y++) {
-                let td = (y / Math.floor((60 / this.resolutionDivisor)))
-                if (y * this.resolutionDivisor > 60) td = 0;
-                let nval =
-                    Math.max((this.noise2D((((x + this.t / 32) + cp.x / 32) * 0.05), ((y) * 0.05)) + 1) / 2 - this.lowerBound, 0)
-                    * ((td ** 2) * 8)
-                    ;
-
-                const cc = 200 + td * 55
-                app.ctx.fillStyle = `rgba(${cc},${cc},${cc},${nval / 4})`
-                app.ctx.beginPath();
-                app.ctx.arc(
-                    x * this.resolutionDivisor,
-                    y * this.resolutionDivisor - cp.y - 100,
-                    (nval) * 8,
-                    0, 2 * Math.PI);
-                app.ctx.fill();
-            }
-        }
-        this.t++;
-    }
-}
-
-class Enemy extends Engine.ComponentBase {
-    sprite: Engine.Sprite | undefined = undefined;
-    rigidbody: Engine.Rigidbody | undefined = undefined;
-    transform: Engine.Transform | undefined = undefined;
-    collider: Engine.BoxCollider | undefined = undefined;
-
-    playerTransform: Engine.Transform | undefined = undefined;
-    playerHeathController: PlayerHealthController | undefined = undefined
-    playerRb: Engine.Rigidbody | undefined = undefined;
-    animation: Array<HTMLImageElement> = [];
-    t: number = 0;
-
-    vel: number = -1;
-
-    getAnimFrame(id: number): HTMLImageElement {
-        const img = new window.Image();
-        img.src = `assets/tiles/enemy/animation/walking/${id}.png`
-        return img;
-    }
-
-    override onInitialized(): void {
-        this.animation.push(this.getAnimFrame(1))
-        this.animation.push(this.getAnimFrame(2))
-
-        this.sprite = this.object?.getComponents(Engine.Sprite)[0] as Engine.Sprite;
-        this.rigidbody = this.object?.getComponents(Engine.Rigidbody)[0] as Engine.Rigidbody;
-        this.transform = this.object?.getComponents(Engine.Transform)[0] as Engine.Transform;
-        this.collider = this.object?.getComponents(Engine.BoxCollider)[0] as Engine.BoxCollider;
-
-        this.playerTransform = player.getComponents(Engine.Transform)[0] as Engine.Transform;
-        this.playerHeathController = player.getComponents(PlayerHealthController)[0] as PlayerHealthController;
-        this.playerRb = player.getComponents(Engine.Rigidbody)[0] as Engine.Rigidbody;
-    }
-
-    kill() {
-        if (!this.transform || !this.playerTransform || !this.playerHeathController || !this.playerRb || !this.object || !this.collider) return
-        this.playerRb.velocity.y = -2;
-        this.transform.scale.y = 6
-        this.transform.position.y += 5;
-        this.object?.Components.splice(this.object.Components.indexOf(this.rigidbody as Engine.ComponentBase))
-        this.vel = 0;
-
-        setTimeout(() => {
-            if (!this.transform) return
-            this.transform.position.y = 1000;
-        }, 500)
-    }
-
-    override onTriggerEnter(params: Engine.TriggerData): void {
-        if (!this.transform || !this.playerTransform || !this.playerHeathController || !this.playerRb) return
-        if (this.vel == 0) return
-        if (params.object === player) {
-            const isHorizontal = this.playerTransform.position.x < (this.transform.position.x - 8) || this.playerTransform.position.x > (this.transform.position.x + 8);
-            if (this.playerTransform.position.y <= this.transform.position.y - 14) {
-                this.kill();
-            } else if (isHorizontal) {
-                this.playerHeathController.kill();
-            }
-        }
-        const ot = params.object?.getComponents(Engine.Transform)[0] as Engine.Transform
-        if (this.vel === -1 && (ot.position.x < this.transform.position.x)) {
-            this.vel = 1;
-        } else if (this.vel === 1 && (ot.position.x > this.transform.position.x)) {
-            this.vel = -1;
-        }
-        this.transform.position.x += this.vel
-    }
-
-    override onTriggerStay(params: Engine.TriggerData): void {
-        if (!this.transform || !this.rigidbody || !this.playerTransform || !this.playerHeathController || !this.playerRb) return
-        if (this.vel == 0) return
-        const ot = params.object?.getComponents(Engine.Transform)[0] as Engine.Transform
-        this.vel = (this.transform.position.x - ot.position.x) / Math.abs(this.transform.position.x - ot.position.x)
-        if (params.object === player) {
-            const isHorizontal = this.playerTransform.position.x < (this.transform.position.x - 8) || this.playerTransform.position.x > (this.transform.position.x + 8);
-            if (this.playerTransform.position.y <= this.transform.position.y - 14) {
-                this.kill();
-            } else if (isHorizontal) {
-                this.playerHeathController.kill();
-            }
-        }
-    }
-
-    override onUpdate(): void {
-        if (!this.sprite || !this.rigidbody || !this.transform) return
-        if (this.transform.position.x > app.renderingClippingPlane.position.x + app.renderingClippingPlane.scale.x + 32) return
-
-        if (Math.abs(this.vel) > 0) this.sprite.texture = this.animation[(Math.floor(this.t / 15) % this.animation.length)]
-        this.rigidbody.velocity.x = this.vel;
-
-        this.t++;
-    }
-}
-
 class Backdrop extends Engine.ComponentBase {
     tile: HTMLImageElement;
 
@@ -670,120 +88,13 @@ class Backdrop extends Engine.ComponentBase {
     }
 
     override onLateUpdate(): void {
+        if (!app) return
         const sx = Math.floor(app.renderingClippingPlane.position.x / 16) * 16 - app.renderingClippingPlane.position.x;
         const sy = Math.floor(app.renderingClippingPlane.position.y / 16) * 16 - app.renderingClippingPlane.position.y;
         for (let x = 0; x < Math.floor(app.renderingClippingPlane.scale.x / 16) + 3; x++) {
             for (let y = 0; y < Math.floor(app.renderingClippingPlane.scale.y / 16) + 3; y++) {
                 Engine.draw(app.ctx, this.tile, 0, { x: Math.floor(sx + ((x - 1) * 16)), y: Math.floor(sy + ((y - 1) * 16)) }, { x: 16, y: 16 })
             }
-        }
-    }
-}
-
-class BlankScreenDialogue extends Engine.ComponentBase {
-    advanceButton: HTMLImageElement | undefined = undefined;
-    private pages: Array<String> = [];
-
-    private t = 0;
-    private pageIdx = 0;
-
-    writeSpeed = 1.5;
-
-    nby: number = -8;
-    nbty: number = -8;
-
-    private spacePressed = false;
-    private shiftPressed = false;
-
-    constructor(text: string) {
-        super();
-
-        this.pages = text.split("\\")
-    }
-
-    public setPages(pages: Array<string>) {
-        this.pages = pages;
-        this.pageIdx = 0;
-    }
-
-    private getTexture(name: string) {
-        const img = new window.Image();
-        img.src = `assets/tiles/textbox/${name}.png`;
-        return img;
-    }
-
-    override onInitialized(): void {
-        this.advanceButton = this.getTexture("textbox-advance-dark");
-
-        document.body.addEventListener("keydown", (e) => {
-            if (e.key === " ") {
-                this.spacePressed = true;
-            }
-
-            if (e.key === "Shift") {
-                this.shiftPressed = true;
-            }
-        }, {signal: app?.abortSignal})
-
-        document.body.addEventListener("keyup", (e) => {
-            if (e.key === " ") {
-                this.spacePressed = false;
-            }
-
-            if (e.key === "Shift") {
-                this.shiftPressed = false;
-            }
-        }, {signal: app?.abortSignal})
-    }
-
-    override onLateRender(): void {
-        if (!app.ctx) return
-        // Top row
-        const xpad = 32;
-        const ypad = 24;
-        const cwid = app.viewportScale.x - (xpad + 8) * 2;
-
-        app.ctx.fillStyle = "#080415"
-        app.ctx.fillRect(0, 0, app.viewportScale.x, app.viewportScale.y)
-
-        this.writeSpeed = this.shiftPressed ? 0.5 : 1.5
-
-        if (this.pages.length !== 0) {
-            const splicedText = this.pages?.[this.pageIdx].slice(0, Math.floor(this.t));
-
-            if (splicedText.length === this.pages[this.pageIdx]?.length && this.spacePressed) {
-                if (this.pageIdx < this.pages.length - 1) {
-                    this.pageIdx++;
-                    this.t = 0;
-                } else {
-                    this.pages = [];
-                    levelIndex++;
-
-                    if (!(new URL(window.location.href).searchParams.has("playtest"))) {
-                        localStorage.setItem("campaignLevelIndex", levelIndex.toString())
-                    }
-
-                    playerSpawnPosition = { x: -64, y: -24 };
-
-                    app.stop();
-                    startLevelLoad();
-                    app.start(60);
-                }
-            }
-
-            this.nbty = splicedText.length === this.pages[this.pageIdx]?.length ? 8 : -8
-
-            this.nby += (this.nbty - this.nby) / 4
-
-            if (this.advanceButton) Engine.draw(app.ctx, this.advanceButton, 0, { x: xpad + cwid - 24, y: this.nby }, { x: 64, y: 16 })
-
-            // Draw text
-            app.ctx.font = "7px 'PressStart2P'"
-            app.ctx.fillStyle = "#c0cbdc"
-
-            drawWrappedText(app.ctx, splicedText, xpad + 8, ypad + 8, cwid, 9)
-
-            this.t += 1 / this.writeSpeed;
         }
     }
 }
@@ -883,72 +194,6 @@ class PauseMenu extends Engine.ComponentBase {
     }
 }
 
-const tileset: Record<string, Array<Array<string>>> = tiledata.tilesets;
-
-function loadWorldFromJson(world: SerializedWorld, app: Engine.App, tileScale: number) {
-    const staticObjects = world.staticObjects;
-    for (const object of staticObjects) {
-        const k = object.areaScale
-        const f = object.areaStartPos
-        if (object.hasCollision) {
-            app.addObject(new Engine.GameObjectBuilder(app)
-                .addComponent(new Engine.Transform({ x: (f.x * tileScale - tileScale / 2) + (tileScale / 2) * k.x, y: (f.y * tileScale - tileScale / 2) + (tileScale / 2) * k.y }, 0, { x: tileScale * k.x, y: tileScale * k.y }))
-                .addComponent(new Engine.BoxCollider({ x: tileScale * k.x, y: tileScale * k.y }, { x: 0, y: 0 }, false))
-                .build())
-        }
-        if (object.objectId !== 'null' && Object.keys(tileset)) {
-            const isTileset = Object.keys(tileset).includes(object.objectId) ? true : false;
-            let spriteSrc = isTileset ? "" : `assets/tiles/${object.objectId}.png`
-            for (let b = 0; b < k.x; b++) {
-                for (let i = 0; i < k.y; i++) {
-                    if (isTileset) {
-                        // Corner Conditions
-                        const corners: Array<Engine.vector> = [
-                            { x: 0, y: 0 },
-                            { x: k.x - 1, y: 0 },
-                            { x: 0, y: k.y - 1 },
-                            { x: k.x - 1, y: k.y - 1 }
-                        ]
-                        const cornerTilesetPositions: Array<Engine.vector> = [{ x: 0, y: 0 }, { x: 2, y: 0 }, { x: 0, y: 2 }, { x: 2, y: 2 }]
-
-                        let tileType = { x: 1, y: 1 } as Engine.vector | undefined;
-                        const pos = { x: b, y: i };
-
-                        if (corners.some(corner => corner.x == pos.x && corner.y == pos.y)) {
-                            tileType = cornerTilesetPositions[corners.findIndex(corner => corner.x == pos.x && corner.y == pos.y)];
-                        } else {
-                            tileType = pos.x === 0 ? { x: 0, y: 1 } : tileType;
-                            tileType = pos.x === k.x ? { x: 2, y: 1 } : tileType;
-
-                            tileType = pos.y === 0 ? { x: 1, y: 0 } : tileType;
-                            tileType = pos.y === k.y ? { x: 1, y: 2 } : tileType;
-                        }
-
-                        if (tileType === undefined) {
-                            console.log(`[${chalk.red("Error")}] Tile not found!`)
-                            continue
-                        } else {
-                            if (!tileset[object.objectId]?.[tileType.y]?.[tileType.x]) continue
-                            spriteSrc = `assets/tiles/${tileset[object.objectId]?.[tileType.y]?.[tileType.x] as string}.png`
-                        }
-                    }
-                    let o: Engine.GameObject = new Engine.GameObjectBuilder(app)
-                        .addComponent(new Engine.Transform({ x: f.x * tileScale + (tileScale * b), y: f.y * tileScale + (tileScale * i) }, 0, { x: tileScale, y: tileScale }))
-                        .addComponent(new Engine.Sprite(spriteSrc))
-                        .addComponent(new Engine.Renderer(app.ctx))
-                        .build();
-                    app.addObject(o)
-                }
-            }
-        }
-    }
-
-    for (const object of world.dynamicObjects) {
-        if (dynamicObjectFunctions[object.objectId] === undefined) return
-        app.addObject(dynamicObjectFunctions[object.objectId](object.position, tileScale, object.objectData))
-    }
-}
-
 let app: Engine.App | undefined = undefined;
 let levels: Array<SerializedWorld> = data.levels as Array<SerializedWorld>
 
@@ -959,7 +204,6 @@ function startLevelLoad() {
     const queryString = window.location.search;
     const urlParams = new URLSearchParams(queryString);
 
-    console.log(localStorage.getItem("campaignLevelIndex"))
     if (urlParams.get("playtest") == "true") {
         if (urlParams.get("map")) {
             const uriLevelData = JSON.parse(decodeURIComponent(urlParams.get("map") as string))
@@ -990,7 +234,7 @@ function startLevelLoad() {
             density: 1
         }))
         .addComponent(new Engine.PlayerController())
-        .addComponent(new PlayerHealthController())
+        .addComponent(new PlayerHealthController(playerSpawnPosition))
         .build()
 
     playerTransform = player.getComponents(Engine.Transform)[0] as Engine.Transform;
@@ -1013,11 +257,21 @@ function startLevelLoad() {
             .build())
     } else {
         app.addObject(new Engine.GameObjectBuilder(app)
-            .addComponent(new CloudRenderer())
+            .addComponent(new CloudRenderer(camera))
             .build())
     }
 
-    loadWorldFromJson(worldJson as SerializedWorld, app, 16)
+    loadWorldFromJson(worldJson as SerializedWorld, app, 16, {
+        textBox,
+
+        player,
+        playerTransform,
+        playerSpawnPosition,
+
+        levelIndex,
+
+        levelLoadCallback: startLevelLoad
+    } as DynamicObjectInputs)
 
     app.addObject(camera)
 

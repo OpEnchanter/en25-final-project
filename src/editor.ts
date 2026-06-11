@@ -436,7 +436,6 @@ class MenuController extends Engine.ComponentBase {
         tilesetPicker.innerHTML = "";
         objectPicker.innerHTML = "";
 
-        console.log("Adding tiles to picker")
         for (const t of tiles) {
             tilePicker?.appendChild((()=>{
                 const e = document.createElement("label");
@@ -601,7 +600,6 @@ export class Scene extends Engine.Scene {
 
         updateSidebar()
         document.getElementById("menuButton")?.addEventListener("click", (e) => {
-            console.log("MENU")
             menuOpen = !menuOpen;
             updateSidebar()
         }, {signal: app?.abortSignal})
@@ -621,8 +619,6 @@ export class Scene extends Engine.Scene {
             const localStorageLevelData = JSON.parse(localStorage.getItem("playtestMap") as string)
             scene = localStorageLevelData[0]
         }
-
-        console.log(scene);
 
         app.addObject(new Engine.GameObjectBuilder(app)
             .addComponent(new Engine.Transform({x: -64-app.viewportScale.x/2, y: -24-app.viewportScale.y/2}, 0, {x: 0, y: 0}))

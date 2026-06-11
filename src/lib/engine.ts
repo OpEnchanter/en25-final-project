@@ -355,7 +355,6 @@ export class Rigidbody extends ComponentBase {
             } else if (this.object?.isColliding && this.object.isCollidingOld) {
                 this.velocity.x *= (-1*((1-this.bodyProps.friction)*b.x) + 1)
                 this.velocity.y *= (-1*((1-this.bodyProps.friction)*b.y) + 1)
-                console.log(b.x)
 
                 const a = vMath.normalize(this.velocity);
                 
