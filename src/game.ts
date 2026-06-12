@@ -138,7 +138,7 @@ class PauseMenu extends Engine.ComponentBase {
         }, {signal: app?.abortSignal})
     }
 
-    override onLateRender(): void {
+    override onUIRender(): void {
         if (!app || !app.ctx) return
         const gradient = app.ctx.createLinearGradient(0, 0, 200, 0)
         gradient.addColorStop(0, "#000000ab")
