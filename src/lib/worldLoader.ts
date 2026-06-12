@@ -848,7 +848,7 @@ export class Grass extends Engine.ComponentBase {
 
         for (let x = 0; x < 3; x++) {
             this.bladePositions.push(Math.random()*16)
-            this.bladeColors.push(`rgb(${Math.random()*25}, ${Math.random()*50+100}, ${Math.random()*75})`)
+            this.bladeColors.push(`rgb(${Math.random()*25}, ${Math.random()*150+50}, ${Math.random()*75})`)
             this.bladeTilts.push(Math.random()*4-2)
         }
     }
