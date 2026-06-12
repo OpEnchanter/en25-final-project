@@ -188,7 +188,7 @@ export class Scene extends Engine.Scene {
 
         app.addObject(new Engine.GameObjectBuilder(app)
             .addComponent(new Engine.Transform({x:-32, y:-116}, 0, {x:128, y:64}))
-            .addComponent(new Engine.Sprite("/assets/tiles/title.png"))
+            .addComponent(new Engine.Sprite("assets/tiles/title.png"))
             .addComponent(new Engine.Renderer(app.ctx))
             .addComponent(new Title())
             .build())
