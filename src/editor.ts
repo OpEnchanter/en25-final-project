@@ -1,7 +1,7 @@
 import * as Engine from "./lib/engine.ts";
 import chalk from "chalk";
 
-import tiledata from "/assets/tiles/tiledata.json"
+import tiledata from "./assets/tiles/tiledata.json"
 
 import EditorHtml from "/editor/index.html?raw"
 
@@ -26,7 +26,7 @@ type SerializedWorld = {
 }
 
 const playerSprite = new window.Image();
-playerSprite.src="/assets/tiles/flag.png";
+playerSprite.src="./assets/tiles/flag.png";
 
 const tileNameAliases: Record<string, string> = tiledata.translation;
 
@@ -450,7 +450,7 @@ class MenuController extends Engine.ComponentBase {
                 radio.value = t;
 
                 const img = document.createElement("img");
-                let imsrc = Object.keys(tiledata.editor_textures).includes(t) ? `/assets/tiles/${tiledata.editor_textures?.[t as string]}.png` :`/assets/tiles/${t}.png`
+                let imsrc = Object.keys(tiledata.editor_textures).includes(t) ? `./assets/tiles/${tiledata.editor_textures?.[t as string]}.png` :`./assets/tiles/${t}.png`
                 img.src = imsrc;
                 img.width = 16;
                 img.height = 16;
@@ -487,7 +487,7 @@ class MenuController extends Engine.ComponentBase {
                 radio.value = t;
 
                 const img = document.createElement("img");
-                img.src = `/assets/tiles/${(tileset[t] as Array<Array<string>>)[0]?.[0] as string}.png`;
+                img.src = `./assets/tiles/${(tileset[t] as Array<Array<string>>)[0]?.[0] as string}.png`;
                 img.width = 16;
                 img.height = 16;
 
@@ -522,7 +522,7 @@ class MenuController extends Engine.ComponentBase {
                 radio.value = o;
 
                 const img = document.createElement("img");
-                let imsrc = Object.keys(tiledata.editor_textures).includes(dynamicTiles[o]?.spriteName) ? `/assets/tiles/${tiledata.editor_textures[dynamicTiles[o]?.spriteName]}.png` :`/assets/tiles/${dynamicTiles[o]?.spriteName}.png`
+                let imsrc = Object.keys(tiledata.editor_textures).includes(dynamicTiles[o]?.spriteName) ? `./assets/tiles/${tiledata.editor_textures[dynamicTiles[o]?.spriteName]}.png` :`./assets/tiles/${dynamicTiles[o]?.spriteName}.png`
                 img.src = imsrc;
                 img.width = 16;
                 img.height = 16;
@@ -579,7 +579,7 @@ export class Scene extends Engine.Scene {
 
         for (const tile of tiles) {
             tileImageCache[tile] = new window.Image();
-            let imsrc = Object.keys(tiledata.editor_textures).includes(tile) ? `/assets/tiles/${tiledata.editor_textures?.[tile as string]}.png` :`/assets/tiles/${tile}.png`
+            let imsrc = Object.keys(tiledata.editor_textures).includes(tile) ? `./assets/tiles/${tiledata.editor_textures?.[tile as string]}.png` :`./assets/tiles/${tile}.png`
             tileImageCache[tile].src = imsrc;
         }
 
@@ -589,14 +589,14 @@ export class Scene extends Engine.Scene {
                     if (!tileset[set]) continue
                     const tilename = tileset[set]?.[y]?.[x] as string
                     tileImageCache[tilename] = new window.Image();
-                    tileImageCache[tilename].src = `/assets/tiles/${tilename}.png`
+                    tileImageCache[tilename].src = `./assets/tiles/${tilename}.png`
                 }
             }
         }
 
         for (const obj of Object.keys(dynamicTiles)) {
             tileImageCache[obj] = new window.Image();
-            let imsrc = Object.keys(tiledata.editor_textures).includes(dynamicTiles[obj]?.spriteName) ? `/assets/tiles/${tiledata.editor_textures[dynamicTiles[obj]?.spriteName]}.png` :`/assets/tiles/${dynamicTiles[obj]?.spriteName}.png`
+            let imsrc = Object.keys(tiledata.editor_textures).includes(dynamicTiles[obj]?.spriteName) ? `./assets/tiles/${tiledata.editor_textures[dynamicTiles[obj]?.spriteName]}.png` :`./assets/tiles/${dynamicTiles[obj]?.spriteName}.png`
             tileImageCache[obj].src = imsrc;
         }
 
