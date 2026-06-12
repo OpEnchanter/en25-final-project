@@ -296,7 +296,7 @@ export class Scene extends Engine.Scene {
         this.intervalId = setInterval(() => {
             if (!app) return;
             app.options.downscaleFactor = 4 * (window.innerHeight / 665)
-        }, 500)
+        }, 50)
 
         playerSpawnPosition.x = -64;
         playerSpawnPosition.y = -24;

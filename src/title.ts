@@ -166,7 +166,7 @@ export class Scene extends Engine.Scene {
         this.intervalId = setInterval(() => {
             if (!app) return;
             app.options.downscaleFactor = 4 * (window.innerHeight / 665)
-        }, 500)
+        }, 50)
 
         const world: SerializedWorld = {"staticObjects":[{"objectId":"stone_brick_grass","areaStartPos":{"x":-13,"y":0},"areaScale":{"x":19,"y":2},"hasCollision":true},{"objectId":"stone-bricks/stone-bricks","areaStartPos":{"x":-23,"y":-13},"areaScale":{"x":17,"y":15},"hasCollision":true},{"objectId":"stone_brick_grass","areaStartPos":{"x":1,"y":-2},"areaScale":{"x":5,"y":3},"hasCollision":true},{"objectId":"stone_brick_grass","areaStartPos":{"x":3,"y":-6},"areaScale":{"x":3,"y":6},"hasCollision":true},{"objectId":"stone_brick_grass","areaStartPos":{"x":4,"y":-12},"areaScale":{"x":14,"y":14},"hasCollision":true},{"objectId":"stone_brick_grass","areaStartPos":{"x":-6,"y":-1},"areaScale":{"x":2,"y":2},"hasCollision":true}],"dynamicObjects":[{"objectId":"lucky_block","position":{"x":-1,"y":-3},"objectData":{"contents":""}},{"objectId":"flower_red","position":{"x":-5,"y":-2},"objectData":{}},{"objectId":"flower_blue","position":{"x":3,"y":-7},"objectData":{}}]}
         loadWorldFromJson(world, mainApp, 16, {})

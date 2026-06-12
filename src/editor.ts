@@ -608,7 +608,7 @@ export class Scene extends Engine.Scene {
         this.intervalId = setInterval(() => {
             if (!app) return
             app.options.downscaleFactor = 2 * (window.innerHeight / 665)
-        }, 500);
+        }, 50);
 
         if (urlParams.get("map")) {
             const uriLevelData = JSON.parse(decodeURIComponent(urlParams.get("map") as string))

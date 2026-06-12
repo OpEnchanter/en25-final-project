@@ -1,4 +1,4 @@
-PAGE="" bun run build
+bun run build
 echo ""
 echo "COPYING ASSETS TO DIST"
 cp -r assets/* dist/assets
