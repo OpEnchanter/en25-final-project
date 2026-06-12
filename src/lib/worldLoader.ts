@@ -82,8 +82,9 @@ export const loadDynamicObjects: (inputs: DynamicObjectInputs)=>Record<string, (
                 .addComponent(new Engine.Transform({ x: tileScale * position.x, y: tileScale * position.y }, 0, { x: 3 * tileScale, y: tileScale }))
                 .addComponent(new Engine.Sprite("assets/tiles/moving-platform.png"))
                 .addComponent(new Engine.Renderer(app.ctx))
+                .addComponent(new Engine.BoxCollider({ x: 44, y: 6 }, { x: 0, y: -12 }, true))
                 .addComponent(new Engine.BoxCollider({ x: 48, y: 16 }, { x: 0, y: 0 }, false))
-                .addComponent(new MovingPlatform(objectData.x_translation, objectData.y_translation, objectData.speed))
+                .addComponent(new MovingPlatform(objectData.x_translation, objectData.y_translation, objectData.speed, inputs.player as Engine.GameObject))
                 .build())
         },
         "enemy": (app: Engine.App, position: Engine.vector, tileScale: number, objectData: any) => {
@@ -493,24 +494,68 @@ export class MovingPlatform extends Engine.ComponentBase {
     transform: Engine.Transform | undefined = undefined;
     speed: number = 1
 
+    oldPosition: Engine.vector = {x:0, y:0}
+
+    player: Engine.GameObject;
+
+    targetPos = {x:0, y:0}
+
     t: number = 0;
 
-    constructor(xt: string, yt: string, speed: string) {
+    constructor(xt: string, yt: string, speed: string, player: Engine.GameObject) {
         super()
-        this.translation = { x: parseInt(xt) * 8, y: parseInt(yt) * -8 }
+        this.translation = { x: parseInt(xt) * 16, y: parseInt(yt) * -16 }
         this.speed = parseFloat(speed);
+        this.player = player;
     }
 
     override onInitialized(): void {
         this.transform = this.object?.getComponents(Engine.Transform)[0] as Engine.Transform;
-        this.startPos = structuredClone(this.transform.position);
+        this.startPos.x = this.transform.position.x;
+        this.startPos.y = this.transform.position.y;
+        this.oldPosition.x = this.transform.position.x;
+        this.oldPosition.y = this.transform.position.y;
+        this.targetPos.x = this.startPos.x;
+        this.targetPos.y = this.startPos.y;
     }
 
     override onUpdate(): void {
         if (!this.transform) return;
-        this.transform.position.x = (this.startPos.x + this.translation.x) + (Math.sin((this.t + Math.PI * 8) * (1 / 16 * this.speed))) * this.translation.x
-        this.transform.position.y = (this.startPos.y + this.translation.y) + (Math.sin((this.t + Math.PI * 8) * (1 / 16 * this.speed))) * this.translation.y
+        this.transform.position.x += ((this.targetPos.x - this.transform.position.x) * (this.speed / 16))
+        this.transform.position.y += ((this.targetPos.y - this.transform.position.y) * (this.speed / 16))
         this.t += 1;
+    }
+    
+    override onTriggerStay(params: Engine.TriggerData): void {
+        if (!this.transform || params.object !== this.player) return
+
+        const positionDelta = {
+            x: this.oldPosition.x - this.transform.position.x, 
+            y: this.oldPosition.y - this.transform.position.y
+        }
+
+        const otherTransform = params.object?.getComponents(Engine.Transform)[0] as Engine.Transform
+        const otherRb = params.object?.getComponents(Engine.Rigidbody)[0] as Engine.Rigidbody
+
+        otherTransform.position.x -= positionDelta.x;
+        otherTransform.position.y -= positionDelta.y;
+    }
+
+
+    override onTriggerEnter(params: Engine.TriggerData): void {
+        console.log("updating")
+        this.targetPos.x = this.startPos.x + this.translation.x
+        this.targetPos.y = this.startPos.y + this.translation.y
+    }
+
+   override onTriggerExit(): void {
+       this.targetPos = {x: this.startPos.x, y: this.startPos.y}
+   }
+
+    override onLateUpdate(): void {
+        if (!this.transform) return
+        this.oldPosition.x = this.transform.position.x
+        this.oldPosition.y = this.transform.position.y
     }
 }
 

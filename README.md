@@ -12,9 +12,6 @@ A web-based platformer game I am working on for my English class final project. 
 
 ---
 
->[!NOTE]
->There is a known issue with the level editor where if a level is to big upon entering playtest, the server will refuse to respond to the URL due to the level data being stored in the URL.
-
 ## Features
 **Game**
 
@@ -31,6 +28,7 @@ The game also features a level editor, in which players can create their own cus
 - **D** -> Move right
 - **Space** -> Advance dialogue
 - **Shift** -> Speed up dialogue on story dialogue pages
+- **Escape** -> Open pause menu
 
 **Editor**
 - **WASD** -> Move camera
