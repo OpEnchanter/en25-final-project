@@ -669,7 +669,7 @@ export class App {
         };
         this.sceneManager = sceneManager;
         const canvasParent = document.body.querySelector(".content") != null ? document.body.querySelector(".content") : document.body;
-        this.canvas = canvasParent.appendChild((()=>{
+        this.canvas = canvasParent!.appendChild((()=>{
             const canvas = document.createElement("canvas");
             canvas.id = "canvas";
             return canvas;

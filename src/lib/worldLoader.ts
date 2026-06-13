@@ -17,7 +17,7 @@ export type DynamicObjectInputs = {
 import tiledata from "/assets/tiles/tiledata.json"
 const tileset: Record<string, Array<Array<string>>> = tiledata.tilesets;
 
-export const loadDynamicObjects: (inputs: DynamicObjectInputs)=>Record<string, (app: Engine.App, position: Engine.vector, tileScale: number, objectData: any) => Engine.GameObject> = (inputs: DynamicObjectInputs)=>{
+export const loadDynamicObjects: (inputs: DynamicObjectInputs)=>Record<string, (app: Engine.App, position: Engine.vector, tileScale: number, objectData: any, o?: any) => Engine.GameObject> = (inputs: DynamicObjectInputs)=>{
     return({
         "sign": (app: Engine.App, position: Engine.vector, tileScale: number, objectData: any) => {
             return (new Engine.GameObjectBuilder(app)
@@ -330,7 +330,7 @@ export class TextBox extends Engine.ComponentBase {
         const chi = 16
 
         if (this.pages.length !== 0) {
-            const splicedText = this.pages?.[this.pageIdx].slice(0, Math.floor(this.t / this.writeSpeed));
+            const splicedText = this.pages[this.pageIdx]!.slice(0, Math.floor(this.t / this.writeSpeed));
 
             if (splicedText.length === this.pages[this.pageIdx]?.length && this.spacePressed) {
                 if (this.pageIdx < this.pages.length - 1) {
@@ -684,7 +684,7 @@ export class BlankScreenDialogue extends Engine.ComponentBase {
         this.writeSpeed = this.shiftPressed ? 0.5 : 1.5
 
         if (this.pages.length !== 0) {
-            const splicedText = this.pages?.[this.pageIdx].slice(0, Math.floor(this.t));
+            const splicedText = this.pages[this.pageIdx]!.slice(0, Math.floor(this.t));
 
             if (splicedText.length === this.pages[this.pageIdx]?.length && this.spacePressed) {
                 if (this.pageIdx < this.pages.length - 1) {
@@ -874,7 +874,7 @@ export class Grass extends Engine.ComponentBase {
                 :
                 0
             if (this.bladeTilts[i] != undefined) {
-                movement += this.bladeTilts[i]
+                movement += this.bladeTilts[i]!
             }
 
             movement += this.noise((this.transform.position.x + xOff / 100) + this.t / 256, 0) * 4
@@ -948,9 +948,11 @@ export class Balloon extends Engine.ComponentBase {
     }
 }
 
+let dynamicObjectFunctions: any = undefined;
+
 export function loadWorldFromJson(world: SerializedWorld, app: Engine.App, tileScale: number, inputs: DynamicObjectInputs) {
     const staticObjects = world.staticObjects;
-    const dynamicObjectFunctions = loadDynamicObjects(inputs);
+    dynamicObjectFunctions = loadDynamicObjects(inputs);
     const windNoise: NoiseFunction2D = createNoise2D();
     for (const object of staticObjects) {
         const k = object.areaScale
@@ -1015,6 +1017,6 @@ export function loadWorldFromJson(world: SerializedWorld, app: Engine.App, tileS
 
     for (const object of world.dynamicObjects) {
         if (dynamicObjectFunctions[object.objectId] === undefined) return
-        app.addObject(dynamicObjectFunctions[object.objectId](app, object.position, tileScale, object.objectData))
+        app.addObject(dynamicObjectFunctions[object.objectId]!(app, object.position, tileScale, object.objectData))
     }
 }

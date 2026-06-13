@@ -67,7 +67,7 @@ class Menu extends Engine.ComponentBase {
             anyIsHovered = isHovered ? true : anyIsHovered;
 
             if (isHovered && this.mouseDown) {
-                Object.values(this.buttons)[i]()
+                Object.values(this.buttons)[i]!()
             }
 
             // Render

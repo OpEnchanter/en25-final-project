@@ -57,6 +57,7 @@ class CameraController extends Engine.ComponentBase {
             this.alt = e.shiftKey;
         }, {signal: app?.abortSignal})
         this.transform = this.object?.getComponents(Engine.Transform)[0] as Engine.Transform;
+        if (!app) return
         this.transform.position = {x: -64-app.viewportScale.x/2, y: -24-app.viewportScale.y/2}
     }
 
@@ -65,7 +66,7 @@ class CameraController extends Engine.ComponentBase {
         if (this.transform) {
             const activeEl = document.activeElement;
             const tagName = activeEl?.tagName.toLowerCase();
-            const type = activeEl?.type ? activeEl.type.toLowerCase() : null;
+            const type = (activeEl as any)?.type ? (activeEl as any).type.toLowerCase() : null;
             if (tagName == "input" && type == "text") return;
             if (this.keys["w"]) {
                 this.transform.position.y -= mSpeed
@@ -80,6 +81,7 @@ class CameraController extends Engine.ComponentBase {
             }
 
             if (this.keys["r"]) {
+                if (!app) return
                 this.transform.position = {x: -64-app.viewportScale.x/2, y: -24-app.viewportScale.y/2}
             }
         }
@@ -98,7 +100,7 @@ class EditorRenderer extends Engine.ComponentBase {
             if (e.key === "Backspace") {
                 const activeEl = document.activeElement;
                 const tagName = activeEl?.tagName.toLowerCase();
-                const type = activeEl?.type ? activeEl.type.toLowerCase() : null;
+                const type = (activeEl as any)?.type ? (activeEl as any).type.toLowerCase() : null;
                 if (tagName == "input" && type == "text") return
                 if (selectedStaticObject != -1) {
                     scene.staticObjects.splice(selectedStaticObject, 1);
@@ -110,7 +112,9 @@ class EditorRenderer extends Engine.ComponentBase {
             }
         }, {signal: app?.abortSignal})
 
+        if (!app) return
         app.canvas.addEventListener("mousedown", (e) => {
+            if (!app) return
             this.isMouseDown = true;
             if (!app.options.downscaleFactor) return
             const wp = {
@@ -202,7 +206,7 @@ class EditorRenderer extends Engine.ComponentBase {
                         propInput.type = "text"
 
                         propInput.addEventListener("change", (e) => {
-                            o.objectData[prop] = e?.target?.value;
+                            o.objectData[prop] = (e?.target as HTMLInputElement).value;
                         })
 
                         const propText = document.createElement("span");
@@ -254,7 +258,7 @@ class EditorRenderer extends Engine.ComponentBase {
         }, {signal: app?.abortSignal});
 
         app.canvas.addEventListener("mousemove", (e) => {
-            if (!app.options.downscaleFactor) return
+            if (!app || !app.options.downscaleFactor) return
             const wp = {
                 x: Math.round((e.clientX / app.options.downscaleFactor + app.renderingClippingPlane.position.x) / 16) * 16,
                 y: Math.round((e.clientY / app.options.downscaleFactor + app.renderingClippingPlane.position.y) / 16) * 16
@@ -283,11 +287,11 @@ class EditorRenderer extends Engine.ComponentBase {
     }
 
     override onLateUpdate(): void {
+        if (!app || !app.ctx) return
         const ctx = app.ctx;
 
         // Render Grid
         ctx.strokeStyle = "#8fcfff"
-        ctx.strokeWeight = 1
 
         for (let i = 0; i < Math.round(app.viewportScale.x/16)+2; i++) {
             for (let b = 0; b < Math.round(app.viewportScale.y/16)+2; b++) {
@@ -392,14 +396,14 @@ class MenuController extends Engine.ComponentBase {
             console.log("Exporting")
             const exportedTextArea = document.getElementById("export");
             if (!exportedTextArea) return;
-            exportedTextArea.value = JSON.stringify(scene);
+            (exportedTextArea as HTMLTextAreaElement).value = JSON.stringify(scene);
         })
 
         document.getElementById("importLevelButton")?.addEventListener("click", (e) => {
             console.log("Importing")
             const exportedTextArea = document.getElementById("export");
             if (!exportedTextArea) return;
-            scene = JSON.parse(exportedTextArea.value as string);
+            scene = JSON.parse((exportedTextArea as HTMLTextAreaElement).value as string);
         })
 
         document.getElementById("playtestButton")?.addEventListener("click", (e) => {
@@ -499,7 +503,7 @@ class MenuController extends Engine.ComponentBase {
                 e.appendChild(span);
 
                 radio.addEventListener("change", (e) => {
-                    currentTile = e?.target?.value;
+                    currentTile = (e?.target as HTMLInputElement).value;
                     if (selectedStaticObject !== -1) {
                         const obj: StaticObject = scene.staticObjects[selectedStaticObject] as StaticObject
                         if (obj == undefined) return
@@ -522,7 +526,7 @@ class MenuController extends Engine.ComponentBase {
                 radio.value = o;
 
                 const img = document.createElement("img");
-                let imsrc = Object.keys(tiledata.editor_textures).includes(dynamicTiles[o]?.spriteName) ? `assets/tiles/${tiledata.editor_textures[dynamicTiles[o]?.spriteName]}.png` :`assets/tiles/${dynamicTiles[o]?.spriteName}.png`
+                let imsrc = Object.keys(tiledata.editor_textures).includes(dynamicTiles[o]!.spriteName) ? `assets/tiles/${tiledata.editor_textures[dynamicTiles[o]?.spriteName]}.png` :`assets/tiles/${dynamicTiles[o]?.spriteName}.png`
                 img.src = imsrc;
                 img.width = 16;
                 img.height = 16;
@@ -535,7 +539,7 @@ class MenuController extends Engine.ComponentBase {
                 e.appendChild(span);
 
                 radio.addEventListener("change", (e) => {
-                    currentTile = e?.target?.value;
+                    currentTile = (e?.target as HTMLInputElement).value;
                 }, {signal: app?.abortSignal})
 
                 return e;
@@ -572,7 +576,7 @@ export class Scene extends Engine.Scene {
     private intervalId: any = undefined;
     override load(globalApp: Engine.App): void {
         const parser = new DOMParser();
-        document.body.querySelector(".content")?.appendChild(parser.parseFromString(EditorHtml, "text/html").querySelector(".overlays"))
+        document.body.querySelector(".content")?.appendChild(parser.parseFromString(EditorHtml, "text/html").querySelector(".overlays") as Element)
 
         app = globalApp;
         app.options.downscaleFactor = 2;
@@ -596,7 +600,7 @@ export class Scene extends Engine.Scene {
 
         for (const obj of Object.keys(dynamicTiles)) {
             tileImageCache[obj] = new window.Image();
-            let imsrc = Object.keys(tiledata.editor_textures).includes(dynamicTiles[obj]?.spriteName) ? `assets/tiles/${tiledata.editor_textures[dynamicTiles[obj]?.spriteName]}.png` :`assets/tiles/${dynamicTiles[obj]?.spriteName}.png`
+            let imsrc = Object.keys(tiledata.editor_textures).includes(dynamicTiles[obj]!.spriteName) ? `assets/tiles/${tiledata.editor_textures[dynamicTiles[obj]?.spriteName]}.png` :`assets/tiles/${dynamicTiles[obj]?.spriteName}.png`
             tileImageCache[obj].src = imsrc;
         }
 
