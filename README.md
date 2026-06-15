@@ -19,7 +19,9 @@ The main game features 4 levels with some dialogue between the levels presented 
 
 **Level Editor**
 
-The game also features a level editor, in which players can create their own custom levels using all of the features that are shown in the main levels of the game. In the level editor, players can import / export levels from the provided textbox as well as quickly open a window to immediately playtest levels.
+The game also features a level editor, in which players can create their own custom levels using all of the features that are shown in the main levels of the game. In the level editor, players can import / export levels from the provided textbox as well as quickly open a window to immediately playtest levels. 
+
+The level editor can be accessed through the main menu via the `Editor` button or through any level via the `Edit Level` button in the pause menu. Opening the level editor from a level automatically loads the layout of that level into the editor where it can be used to learn the level editor, as the base for a new level, or to just have fun messing around with the level editor.
 
 ## Controls
 **Game**
@@ -34,7 +36,7 @@ The game also features a level editor, in which players can create their own cus
 - **WASD** -> Move camera
 - **Tab** -> Open editor tools
 - **Left-Click** -> Place / select object
-- **Drag** -> Move / resize object
+- **Drag** -> Move / resize object (Resizing requires dragging on the purple dot)
 - **R** -> Reset camera position to player spawn
 
 **Game Debug**
