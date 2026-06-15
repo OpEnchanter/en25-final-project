@@ -1,5 +1,9 @@
+import { registerSW } from "virtual:pwa-register";
 import * as Engine from "./lib/engine.ts";
 import chalk from "chalk";
+
+// Install the service worker that precaches assets for instant repeat loads.
+registerSW({ immediate: true });
 
 import * as Game from "./game.ts";
 import * as Editor from "./editor.ts";
