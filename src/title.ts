@@ -16,7 +16,7 @@ class Menu extends Engine.ComponentBase {
     private t: number = 0;
 
     private buttons: Record<string, ()=>void> = {
-        "New Game": ()=>{exitPlaytestMode(); localStorage.setItem("campaignLevelIndex", "0"); app?.sceneManager.loadScene("game", app)},
+        "New Game": ()=>{exitPlaytestMode(); localStorage.setItem("campaignLevelIndex", "0"); localStorage.removeItem("playerCollectibles"); app?.sceneManager.loadScene("game", app)},
         "Continue": ()=>{exitPlaytestMode(); app?.sceneManager.loadScene("game", app)},
         "Editor": ()=>{exitPlaytestMode(); app?.sceneManager.loadScene("editor", app)},
     }

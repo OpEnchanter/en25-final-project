@@ -48,7 +48,8 @@
             "next_level_trigger": {"spriteName":"next-level-trigger", "scale":{"x":16, "y":16}, "objectDataShape":{}},
             "moving_platform": {"spriteName":"moving-platform", "scale":{"x":48, "y":16}, "objectDataShape":{"x_translation":0, "y_translation":0, "speed":1}},
             "enemy": {"spriteName":"enemy/animation/walking/1", "scale":{"x":16, "y":16}, "objectDataShape":{}},
-            "balloon": {"spriteName":"balloon/1", "scale":{"x":96, "y":128}, "objectDataShape":{}}
+            "balloon": {"spriteName":"balloon/1", "scale":{"x":96, "y":128}, "objectDataShape":{}},
+            "coin": {"spriteName":"coin/1", "scale":{"x":16, "y":16}, "objectDataShape":{}}
         }
     },
     "translation": {
@@ -81,7 +82,8 @@
         "flower_red": "Red Flower",
         "flower_blue": "Blue Flower",
         "enemy": "Enemy",
-        "balloon": "Hot Air Balloon"
+        "balloon": "Hot Air Balloon",
+        "coin": "Coin"
     },
     "editor_textures": {
         "null": "editor/null",

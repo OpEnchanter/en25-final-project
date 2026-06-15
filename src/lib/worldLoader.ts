@@ -121,6 +121,24 @@ export const loadDynamicObjects: (inputs: DynamicObjectInputs)=>Record<string, (
                 .addComponent(new Balloon())
                 .build())
         },
+        
+        "coin": (app: Engine.App, position: Engine.vector, tileScale: number, objectData: any) => {
+            return (new Engine.GameObjectBuilder(app)
+                .addComponent(new Engine.Transform({ x: tileScale * position.x, y: tileScale * position.y }, 0, { x: tileScale * 1, y: tileScale * 1 }))
+                .addComponent(new Engine.Sprite("assets/tiles/coin/1.png"))
+                .addComponent(new Engine.Renderer(app.ctx))
+                .addComponent(new Engine.BoxCollider({ x: 16, y: 16 }, { x: 0, y: 0 }, true))
+                .addComponent(new CoinCollectible())
+                .build())
+        },
+        "lucky_block_coin": (app: Engine.App, position: Engine.vector, tileScale: number, objectData: any) => {
+            return (new Engine.GameObjectBuilder(app)
+                .addComponent(new Engine.Transform({ x: tileScale * position.x, y: tileScale * position.y }, 0, { x: tileScale * 1, y: tileScale * 1 }))
+                .addComponent(new Engine.Sprite("assets/tiles/coin/1.png"))
+                .addComponent(new Engine.Renderer(app.ctx))
+                .addComponent(new LuckyBlockCoin(inputs.player!))
+                .build())
+        }
     });
 };
 
@@ -945,6 +963,126 @@ export class Balloon extends Engine.ComponentBase {
 
         this.sprite.texture = this.anim[Math.ceil(this.t / 5) % 4]
         this.t++;
+    }
+}
+
+export class CoinCollectible extends Engine.ComponentBase {
+    anim: Array<HTMLImageElement> = [];
+    t: number = 0;
+
+    sprite: Engine.Sprite | undefined = undefined;
+    transform: Engine.Transform | undefined = undefined;
+
+    triggered: boolean = false;
+
+    getAnimFrame(i: number) {
+        const img = new window.Image();
+        img.src = `/assets/tiles/coin/${i}.png`
+        return img
+    }
+
+    override onInitialized(): void {
+        for (let i = 1; i < 5; i++) {
+            this.anim.push(this.getAnimFrame(i))
+        }
+
+        this.sprite = this.object?.getComponents(Engine.Sprite)[0] as Engine.Sprite;
+        this.transform = this.object?.getComponents(Engine.Transform)[0] as Engine.Transform;
+    }
+
+    override onUpdate(): void {
+        if (!this.sprite) return
+        this.sprite.texture = this.anim[Math.floor(this.t / 10) % 3]
+        this.t++;
+    }
+
+    override onTriggerEnter(params: Engine.TriggerData): void {
+        if (!this.transform || this.triggered) return
+        const collectibleManager = params.object?.getComponents(CollectibleManager)[0] as CollectibleManager;
+        if (!collectibleManager) return
+        collectibleManager.updateCollectible("coins", 1);
+        this.transform.position.y += 10000;
+        this.triggered = true;
+    }
+}
+
+export class LuckyBlockCoin extends CoinCollectible {
+
+    player: Engine.GameObject;
+
+    constructor (player: Engine.GameObject) {
+        super();
+        this.player = player;
+    }
+
+    override onInitialized(): void {
+        super.onInitialized();
+
+        const collectibleManager = this.player.getComponents(CollectibleManager)[0] as CollectibleManager;
+        if (!collectibleManager) return
+        collectibleManager.updateCollectible("coins", 1);
+    }
+
+    override onUpdate(): void {
+        if (!this.transform || !this.sprite) return
+        this.sprite.texture = this.anim[Math.floor(this.t / 2) % 3]
+        if (this.t < 15) {
+            this.transform.position.y -= this.t/3;
+            this.transform.scale.x *= 0.99
+            this.transform.scale.y *= 0.99
+        } else {
+            this.transform.position.y = 10000;
+        }
+        this.t++;
+    }
+
+    override onTriggerEnter(params: Engine.TriggerData): void {}
+}
+
+export class CollectibleRenderer extends Engine.ComponentBase {
+    manager: CollectibleManager;
+
+    constructor (collectibleManager: CollectibleManager) {
+        super();
+        this.manager = collectibleManager;
+    }
+
+    override onUIRender(): void {
+        if (!this.object || !this.object.app.ctx) return
+        const ctx = this.object.app.ctx;
+        const xpad = 8;
+        const ypad = 16;
+
+        ctx.font = "7px 'PressStart2P'"
+        ctx.fillStyle = "#000000"
+        ctx.textAlign = "right"
+        ctx.fillText(`${this.manager.getCollectible("coins")}c`, this.object.app.viewportScale.x - xpad, ypad)
+        ctx.textAlign = "left"
+    }
+}
+
+export class CollectibleManager extends Engine.ComponentBase {
+    private collectibles: Record<any, number> = {};
+
+    override onInitialized(): void {
+        if (!window.localStorage.getItem("playerCollectibles")) return;
+        const collectiblesJson = JSON.parse(window.localStorage.getItem("playerCollectibles")!)
+        this.collectibles = collectiblesJson;
+    }
+
+    public updateCollectible(collectibleName: string, totalChange: number) {
+        if (!this.collectibles[collectibleName]) {
+            this.collectibles[collectibleName] = 0;   
+        }
+        this.collectibles[collectibleName]! += totalChange;
+        window.localStorage.setItem("playerCollectibles", JSON.stringify(this.collectibles))
+    }
+
+    public getCollectible(collectibleName: string): number {
+        if (!this.collectibles[collectibleName]) {
+            this.collectibles[collectibleName] = 0;   
+        }
+        return this.collectibles[collectibleName]!;
     }
 }
 

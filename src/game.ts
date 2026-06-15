@@ -1,5 +1,5 @@
 import * as Engine from "./lib/engine.ts";
-import { loadWorldFromJson, TextBox, CloudRenderer, PlayerHealthController, type SerializedWorld, type DynamicObjectInputs } from "./lib/worldLoader.ts";
+import { loadWorldFromJson, TextBox, CloudRenderer, PlayerHealthController, type SerializedWorld, type DynamicObjectInputs, CollectibleManager, CollectibleRenderer } from "./lib/worldLoader.ts";
 
 import data from "./data/data.json"
 
@@ -223,6 +223,8 @@ function startLevelLoad() {
 
     document.title = urlParams.get("map") ? "Custom Map" : "Campaign"
 
+    const collectibleManager: CollectibleManager = new CollectibleManager();
+
     player = new Engine.GameObjectBuilder(app)
         .addComponent(new Engine.Sprite("assets/bennet/standing.png"))
         .addComponent(new Engine.Renderer(app.ctx))
@@ -238,6 +240,8 @@ function startLevelLoad() {
         }))
         .addComponent(new Engine.PlayerController())
         .addComponent(new PlayerHealthController(playerSpawnPosition))
+        .addComponent(collectibleManager)
+        .addComponent(new CollectibleRenderer(collectibleManager))
         .build()
 
     playerTransform = player.getComponents(Engine.Transform)[0] as Engine.Transform;
