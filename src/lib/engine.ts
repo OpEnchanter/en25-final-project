@@ -439,12 +439,16 @@ export class PlayerController extends ComponentBase {
                 return ot.position.x > this.transform.position.x
             })
 
-            const playerMovementSpeed = onGround ? 0.3 : 0.1
+            const playerMovementSpeed = onGround ? 0.15 : 0.05
+            this.rigidbody.bodyProps.friction = 0.78
             if (this.keys["a"] && !leftCol) {
-                this.rigidbody.velocity = {x: this.rigidbody?.velocity.x-playerMovementSpeed, y: this.rigidbody.velocity.y}
+                this.rigidbody.velocity.x = this.rigidbody?.velocity.x-playerMovementSpeed
+                this.rigidbody.bodyProps.friction = 0.978
             } else if (this.keys["d"] && !rightCol) {
-                this.rigidbody.velocity = {x: this.rigidbody?.velocity.x+playerMovementSpeed, y: this.rigidbody.velocity.y}
+                this.rigidbody.velocity.x = this.rigidbody?.velocity.x+playerMovementSpeed
+                this.rigidbody.bodyProps.friction = 0.978
             }
+            this.rigidbody.velocity.x = Math.max(-3, Math.min(3, this.rigidbody.velocity.x))
         }
         this.t++;
     }

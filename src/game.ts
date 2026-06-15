@@ -234,8 +234,8 @@ function startLevelLoad() {
         .addComponent(new PlayerAnimator())
         .addComponent(new Engine.Rigidbody({
             bounciness: 0,
-            friction: 0.93,
-            drag: 0.98,
+            friction: 0.80,
+            drag: 0.987,
             density: 1
         }))
         .addComponent(new Engine.PlayerController())
