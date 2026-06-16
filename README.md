@@ -1,16 +1,10 @@
-# en25 final ~ Super Mr. Bennet
+# Super Mr. Bennet
 
 [Public Website](https://bennet.tgreenhagen.com) | [Itch.io](https://openchanter.itch.io/super-mr-bennet)
 
-A web-based platformer game I am working on for my English class final project. It features a reinterpretation of the portion of Jane Austen's Pride and Prejudice in which Mr. Bennet searches for his daughter Lydia after she ran off with Mr. Wickham.
+This is a web-based platformer based on Jane Austen's *Pride and Prejudice* that I had originally started for my English final project, but after completing that decided to continue working on to make into a better game! This game features a reimagination of the portion of pride and prejudice in which Mr. Bennet chases down his daughter Lydia after she ran off with Mr. Wickham. 
 
----
-
-*Silly statistics :3*
-
-![Test](https://hackatime.hackclub.com/api/v1/badge/U0ADGEN6745/OpEnchanter/en25-final-project)
-
----
+The game was originally based on Nintendo's *Super Mario Bros*, but has since diverged far from the original vision with many aspects and features being more similar to more modern games than the old retro style of *Super Mario Bros*.
 
 ## Features
 **Game**
@@ -19,7 +13,7 @@ The main game features 4 levels with some dialogue between the levels presented 
 
 **Level Editor**
 
-The game also features a level editor, in which players can create their own custom levels using all of the features that are shown in the main levels of the game. In the level editor, players can import / export levels from the provided textbox as well as quickly open a window to immediately playtest levels. 
+The game also features a level editor, in which players can create their own custom levels using all of the features that are shown in the main levels of the game. In the level editor, players can import / export levels from the provided textbox as well as quickly open the level they are currently owkring on to playtest it.
 
 The level editor can be accessed through the main menu via the `Editor` button or through any level via the `Edit Level` button in the pause menu. Opening the level editor from a level automatically loads the layout of that level into the editor where it can be used to learn the level editor, as the base for a new level, or to just have fun messing around with the level editor.
 
@@ -48,8 +42,7 @@ The level editor can be accessed through the main menu via the `Editor` button o
 ## Frontend
 This game is built for a web browser, for maximum compatability across platforms and devices, it uses a game engine built from the ground up specifically for this project featuring simple rectangular AABB collision and rigidbody physics built on the HTML `canvas` element.
 
-## Backend
-This project uses `Vite` to package all the typescript resources for a web browser.
+This project uses `Typescript` and `Bun` with `Vite` to package all the typescript resources and art to be loaded and create a playable game in any modern web browser.
 
 **Simple Self-Hosting**
 1. Clone the repository (`git clone https://github.com/OpEnchanter/en25-final-project.git`)
@@ -62,6 +55,16 @@ This project uses `Vite` to package all the typescript resources for a web brows
 3. Change directory (`cd en25-final-project`)
 2. Install dependencies (`bun install`)
 3. Run script (`./build.sh`)
+
+## Backend
+Currently there is no long-running backend implemented in this project. **However**, a user-made level sharing system is planned for a future version.
+
+
+---
+
+*Silly statistics :3*
+
+![Hackatime Badge](https://hackatime.hackclub.com/api/v1/badge/U0ADGEN6745/OpEnchanter/en25-final-project)
 
 ---
 

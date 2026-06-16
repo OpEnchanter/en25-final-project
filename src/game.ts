@@ -2,6 +2,7 @@ import * as Engine from "./lib/engine.ts";
 import { loadWorldFromJson, TextBox, CloudRenderer, PlayerHealthController, type SerializedWorld, type DynamicObjectInputs, CollectibleManager, CollectibleRenderer } from "./lib/worldLoader.ts";
 
 import data from "./data/data.json"
+import { createNoise2D, type NoiseFunction2D } from "simplex-noise";
 
 let textBox: TextBox | undefined = undefined;
 let player: Engine.GameObject;
@@ -10,6 +11,8 @@ let playerTransform: Engine.Transform;
 
 let levelIndex = 0;
 let playerSpawnPosition = { x: -64, y: -24 };
+
+const weatherNoise: NoiseFunction2D = createNoise2D();
 
 class CameraController extends Engine.ComponentBase {
     playerTransform: Engine.Transform | null = null;
@@ -277,7 +280,9 @@ function startLevelLoad() {
 
         levelIndex,
 
-        levelLoadCallback: startLevelLoad
+        levelLoadCallback: startLevelLoad,
+        
+        weatherNoise
     } as DynamicObjectInputs)
 
     app.addObject(camera)

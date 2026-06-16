@@ -11,6 +11,8 @@ export type DynamicObjectInputs = {
 
     levelIndex?: number,
 
+    weatherNoise?: NoiseFunction2D,
+
     levelLoadCallback?: ()=>void
 }
 
@@ -105,10 +107,10 @@ export const loadDynamicObjects: (inputs: DynamicObjectInputs)=>Record<string, (
                 .addComponent(new BlankScreenDialogue(objectData.text, inputs.levelIndex as number, inputs.playerSpawnPosition as Engine.vector, inputs.levelLoadCallback as ()=>void))
                 .build())
         },
-        "grass": (app: Engine.App, position: Engine.vector, tileScale: number, objectData: any, windNoise: NoiseFunction2D) => {
+        "grass": (app: Engine.App, position: Engine.vector, tileScale: number, objectData: any) => {
             return (new Engine.GameObjectBuilder(app)
                 .addComponent(new Engine.Transform({ x: tileScale * position.x, y: tileScale * position.y }, 0, { x: tileScale, y: tileScale }))
-                .addComponent(new Grass(inputs.playerTransform, windNoise))
+                .addComponent(new Grass(inputs.playerTransform, inputs.weatherNoise!))
                 .build())
         },
         "balloon": (app: Engine.App, position: Engine.vector, tileScale: number, objectData: any) => {
@@ -117,8 +119,7 @@ export const loadDynamicObjects: (inputs: DynamicObjectInputs)=>Record<string, (
                 .addComponent(new Engine.Sprite("assets/tiles/balloon/1.png"))
                 .addComponent(new Engine.Renderer(app.ctx))
                 .addComponent(new Engine.BoxCollider({ x: 32, y: 10 }, { x: 0, y: 49 }, false))
-                .addComponent(new Engine.Rigidbody({ bounciness: 0, friction: 1, drag: 1 } as Engine.BodyProperties))
-                .addComponent(new Balloon())
+                .addComponent(new Balloon(inputs.weatherNoise!))
                 .build())
         },
         
@@ -847,7 +848,8 @@ export class Grass extends Engine.ComponentBase {
 
     private bladePositions: Array<number> = [];
     private bladeColors: Array<string> = [];
-    private bladeTilts: Array<number> = [];
+    private bladeTilts: Array<number> = []
+    private bladeLengths: Array<number> = [];
 
     private t: number = 0;
 
@@ -868,6 +870,7 @@ export class Grass extends Engine.ComponentBase {
             this.bladePositions.push(Math.random()*16)
             this.bladeColors.push(`rgb(${Math.random()*25}, ${Math.random()*150+50}, ${Math.random()*75})`)
             this.bladeTilts.push(Math.random()*4-2)
+            this.bladeLengths.push((Math.random()*4)+5)
         }
     }
 
@@ -900,7 +903,7 @@ export class Grass extends Engine.ComponentBase {
             const verts: Array<Engine.vector> = [
                 {x:rPos.x + xOff, y:rPos.y},
                 {x:rPos.x + 2 + xOff, y:rPos.y},
-                {x:rPos.x + 1 + xOff + movement, y:rPos.y - 7 + (Math.abs(movement) / 2)}
+                {x:rPos.x + 1 + xOff + movement, y:rPos.y - this.bladeLengths[i]! + (Math.abs(movement) / 2)}
             ]
 
             const gradient = this.object.app.ctx.createLinearGradient(rPos.x+xOff, rPos.y, rPos.x+xOff, rPos.y - 5)
@@ -933,6 +936,16 @@ export class Balloon extends Engine.ComponentBase {
 
     targetY: number = 0;
 
+    noise: NoiseFunction2D;
+
+    startX: number = 0;
+    startY: number = 0;
+
+    constructor (weatherNoise: NoiseFunction2D) {
+        super();
+        this.noise = weatherNoise;
+    }
+
     getAnimFrame(frame: number) {
         const img = new window.Image() as HTMLImageElement;
         img.src = `/assets/tiles/balloon/${frame}.png`
@@ -948,18 +961,26 @@ export class Balloon extends Engine.ComponentBase {
         this.transform = this.object?.getComponents(Engine.Transform)[0] as Engine.Transform;
         this.rigidbody = this.object?.getComponents(Engine.Rigidbody)[0] as Engine.Rigidbody;
 
+        const startPos = this.transform.position;
+
+        this.startX = startPos.x;
+        this.startY = startPos.y;
+
         this.targetY = this.transform.position.y;
-        this.transform.position.y += 3
     }
 
     override onUpdate(): void {
-        if (!this.sprite || !this.transform || !this.rigidbody) return
+        if (!this.sprite || !this.transform) return
 
-        if (this.transform.position.y > this.targetY) {
-            this.rigidbody.velocity.y -= ((this.transform.position.y + 96) / this.targetY);
-        } else {
-            this.rigidbody.velocity.y -= 0.06;
-        }
+        const n = this.noise((this.transform.position.x / 100) + this.t / 256, 0) * 4
+        const n2 = this.noise((this.transform.position.x / 100 + 100) + this.t / 256, 0) * 4
+
+        const rad = n2 * (Math.PI / 180)
+
+        this.transform.position.y = this.startY + n * 4 - Math.sin(rad + Math.PI / 2) * 64 + 8
+        this.transform.position.x = this.startX - Math.cos(rad + Math.PI / 2) * 64
+
+        this.transform.rotation = n2
 
         this.sprite.texture = this.anim[Math.ceil(this.t / 5) % 4]
         this.t++;
@@ -1091,7 +1112,6 @@ let dynamicObjectFunctions: any = undefined;
 export function loadWorldFromJson(world: SerializedWorld, app: Engine.App, tileScale: number, inputs: DynamicObjectInputs) {
     const staticObjects = world.staticObjects;
     dynamicObjectFunctions = loadDynamicObjects(inputs);
-    const windNoise: NoiseFunction2D = createNoise2D();
     for (const object of staticObjects) {
         const k = object.areaScale
         const f = object.areaStartPos
@@ -1140,7 +1160,7 @@ export function loadWorldFromJson(world: SerializedWorld, app: Engine.App, tileS
                     const px = f.x * tileScale + (tileScale * b)
                     const py = f.y * tileScale + (tileScale * i)
                     if (["assets/tiles/brick/grass/brick-grass.png", "assets/tiles/stone-bricks/grass/stone-bricks-grass.png"].includes(spriteSrc) && dynamicObjectFunctions.grass) {
-                        app.addObject(dynamicObjectFunctions.grass(app, {x: (px/16), y:(py/16)-1}, 16, {}, windNoise));
+                        app.addObject(dynamicObjectFunctions.grass(app, {x: (px/16), y:(py/16)-1}, 16, {}));
                     }
                     let o: Engine.GameObject = new Engine.GameObjectBuilder(app)
                         .addComponent(new Engine.Transform({ x: px, y: py }, 0, { x: tileScale, y: tileScale }))
