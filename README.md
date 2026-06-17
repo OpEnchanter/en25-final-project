@@ -2,7 +2,7 @@
 
 [Public Website](https://bennet.tgreenhagen.com) | [Itch.io](https://openchanter.itch.io/super-mr-bennet)
 
-This is a web-based platformer based on Jane Austen's *Pride and Prejudice* that I had originally started for my English final project, but after completing that decided to continue working on to make into a better game! This game features a reimagination of the portion of pride and prejudice in which Mr. Bennet chases down his daughter Lydia after she ran off with Mr. Wickham. 
+This is a web-based platformer based on Jane Austen's *Pride and Prejudice*! This game features a reimagination of the portion of pride and prejudice in which Mr. Bennet chases down his daughter Lydia after she ran off with Mr. Wickham. 
 
 The game was originally based on Nintendo's *Super Mario Bros*, but has since diverged far from the original vision with many aspects and features being more similar to more modern games than the old retro style of *Super Mario Bros*.
 
